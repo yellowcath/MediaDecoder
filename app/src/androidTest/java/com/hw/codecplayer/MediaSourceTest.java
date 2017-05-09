@@ -1,7 +1,6 @@
 package com.hw.codecplayer;
 
 import android.content.Context;
-import android.media.MediaFormat;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 import com.hw.codecplayer.demo.util.AssetsUtil;
@@ -38,8 +37,6 @@ public class MediaSourceTest {
         MediaSource mediaSource = new MediaSource();
         try {
             mediaSource.setDataSource(dataList);
-            MediaFormat currentMediaFormat = mediaSource.getCurrentMediaFormat();
-            int integer = currentMediaFormat.getInteger(MediaFormat.KEY_I_FRAME_INTERVAL);
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -60,7 +60,7 @@ public class MediaSource implements IMediaSource {
             CL.i("循环seek,seekToMs:" + seekToTimeMs + " seekSampleTimeMs:" + seekSampleTimeMs);
         }
         long e = System.currentTimeMillis();
-        CL.i(String.format("seek成功，循环%d次，耗时:%dms,seekTo:%d,seekSampleTimeMs:%d"),index,e-s,seekToTimeMs,seekSampleTimeMs);
+        CL.i(String.format("seek成功，循环%d次，耗时:%dms,seekTo:%d,seekSampleTimeMs:%d",index,e-s,seekToTimeMs,seekSampleTimeMs));
     }
 
     @Override
