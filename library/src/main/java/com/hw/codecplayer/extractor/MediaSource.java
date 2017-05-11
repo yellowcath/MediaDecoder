@@ -24,6 +24,7 @@ public class MediaSource implements IMediaSource {
     private List<MediaData> mDataList;
     private MediaExtractor mCurExtractor, mNextExtractor;
     private MediaData mCurData;
+    private int mCurIndex;
     private MediaExtractorSeeker mExtractorSeeker;
     private SeekThread mHandlerThread;
 
@@ -87,12 +88,11 @@ public class MediaSource implements IMediaSource {
             return true;
         }
         //是否已到最后
-        int index = mDataList.indexOf(mCurData);
-        if (index == mDataList.size() - 1 || mExtractorSeeker == null || mNextExtractor == null) {
+        if (mCurIndex == mDataList.size() - 1 || mExtractorSeeker == null || mNextExtractor == null) {
             CL.i("已到最后一个视频，Finish");
             return false;
         }
-        MediaData nextData = mDataList.get(index + 1);
+        MediaData nextData = mDataList.get(mCurIndex + 1);
         //等待下一个视频Seek完成
         CL.i("等待下一个视频seek");
         boolean seekSuccess = mExtractorSeeker.waitSeekFinish();
@@ -101,19 +101,20 @@ public class MediaSource implements IMediaSource {
             throw new RuntimeException("视频预加载失败:" + nextData.toString());
         }
         mCurData = nextData;
+        mCurIndex++;
         //交换两个Extractor
         MediaExtractor tempExtractor = mCurExtractor;
         mCurExtractor = mNextExtractor;
         mNextExtractor = tempExtractor;
         mExtractorSeeker = null;
-        if (index + 1 == mDataList.size() - 1) {
+        if (mCurIndex + 1 > mDataList.size() - 1) {
             CL.i("已是最后一个视频，不再预加载");
             return true;
         }
         //预加载下一个视频
         mNextExtractor.release();
         mNextExtractor = new MediaExtractor();
-        preLoad(mNextExtractor, mDataList.get(index + 2));
+        preLoad(mNextExtractor, mDataList.get(mCurIndex + 1));
         return true;
     }
 
@@ -156,6 +157,7 @@ public class MediaSource implements IMediaSource {
         CL.i("开始同步加载第一个视频:" + mediaData.mediaPath);
         mCurExtractor = extractor;
         mCurData = mediaData;
+        mCurIndex = 0;
         extractor.setDataSource(mediaData.mediaPath);
         int videoTrackIndex = getVideoTrackIndex(extractor);
         extractor.selectTrack(videoTrackIndex);

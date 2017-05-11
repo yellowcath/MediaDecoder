@@ -48,6 +48,9 @@ public class DecodeTest {
         dataList.add(mediaData1);
         dataList.add(mediaData2);
         dataList.add(mediaData3);
+        dataList.add(mediaData1);
+        dataList.add(mediaData2);
+        dataList.add(mediaData3);
 
         MediaSource mediaSource = new MediaSource();
         try {

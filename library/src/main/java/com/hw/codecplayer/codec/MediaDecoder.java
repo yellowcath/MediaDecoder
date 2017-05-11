@@ -31,7 +31,8 @@ public class MediaDecoder implements IMediaDecoder {
     public void prepare() throws IOException {
         MediaFormat currentMediaFormat = mMediaSource.getCurrentMediaFormat();
         String mime = currentMediaFormat.getString(MediaFormat.KEY_MIME);
-        mFrameRate = currentMediaFormat.getInteger(MediaFormat.KEY_FRAME_RATE);
+        mFrameRate = currentMediaFormat.containsKey(MediaFormat.KEY_FRAME_RATE)?
+                currentMediaFormat.getInteger(MediaFormat.KEY_FRAME_RATE):30;
 
         mMediaCodec = MediaCodec.createDecoderByType(mime);
         currentMediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
@@ -49,6 +50,7 @@ public class MediaDecoder implements IMediaDecoder {
         long defaultFrameDuration = 1000 * 1000 / mFrameRate;
         int inputFrameIndex = 0;
         int outputFrameIndex = 0;
+        boolean inputFinish = false;
         while (true) {
             synchronized (this) {
                 while (mPause) {
@@ -59,7 +61,7 @@ public class MediaDecoder implements IMediaDecoder {
                     }
                 }
             }
-            int inputBufferId = mMediaCodec.dequeueInputBuffer(DEFAULT_TIMEOUT);
+            int inputBufferId = inputFinish?-1:mMediaCodec.dequeueInputBuffer(DEFAULT_TIMEOUT);
             if (inputBufferId >= 0) {
                 ByteBuffer inputBuffer = mMediaCodec.getInputBuffer(inputBufferId);
                 int size = mMediaSource.readSampleData(inputBuffer, 0);
@@ -86,6 +88,7 @@ public class MediaDecoder implements IMediaDecoder {
                 boolean advance = mMediaSource.advance();
                 if (!advance) {
                     CL.i("advancefalse，可能出错或者已经结束");
+                    inputFinish = true;
                     continue;
                 }
             }
@@ -101,6 +104,10 @@ public class MediaDecoder implements IMediaDecoder {
                 mMediaCodec.releaseOutputBuffer(outputBufferId, false);
             }
         }
+    }
+
+    private void processInput(){
+
     }
 
     @Override
