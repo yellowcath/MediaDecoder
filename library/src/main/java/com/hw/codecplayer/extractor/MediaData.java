@@ -23,4 +23,14 @@ public class MediaData {
         this.endTimeMs = endTimeMs;
         shouldCut = true;
     }
+
+    @Override
+    public String toString() {
+        return "MediaData{" +
+                "mediaPath='" + mediaPath + '\'' +
+                ", startTimeMs=" + startTimeMs +
+                ", endTimeMs=" + endTimeMs +
+                ", shouldCut=" + shouldCut +
+                '}';
+    }
 }

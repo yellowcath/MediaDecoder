@@ -2,7 +2,7 @@ package com.hw.codecplayer.demo;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import com.hw.codecplayer.demo.util.CL;
+import com.hw.codecplayer.util.CL;
 
 public class MainActivity extends AppCompatActivity {
 
