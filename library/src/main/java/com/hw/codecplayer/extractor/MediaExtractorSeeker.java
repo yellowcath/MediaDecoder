@@ -8,7 +8,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static com.hw.codecplayer.extractor.MediaSource.getVideoTrackIndex;
+import static com.hw.codecplayer.util.MediaUtil.getVideoTrackIndex;
 
 /**
  * Created by huangwei on 2017/5/11.

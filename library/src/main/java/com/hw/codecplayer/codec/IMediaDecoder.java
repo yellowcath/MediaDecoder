@@ -1,9 +1,6 @@
 package com.hw.codecplayer.codec;
 
-import com.hw.codecplayer.extractor.IMediaSource;
-
-import java.io.IOException;
-import java.util.concurrent.TimeoutException;
+import android.media.MediaFormat;
 
 /**
  * Created by huangwei on 2017/5/11.
@@ -11,7 +8,9 @@ import java.util.concurrent.TimeoutException;
 
 public interface IMediaDecoder {
 
-    public void start() throws TimeoutException, IOException;
+    public void prepare() throws Exception;
+
+    public void start();
 
     public void pause();
 
@@ -19,7 +18,7 @@ public interface IMediaDecoder {
 
     public void release();
 
-    public void setMediaSource(IMediaSource mediaSource);
-
     public void setOnFrameDecodeListener(OnFrameDecodeListener frameDecodeListener);
+
+    public MediaFormat getCurrentMediaFormat();
 }

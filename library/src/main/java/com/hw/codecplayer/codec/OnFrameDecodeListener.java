@@ -7,5 +7,6 @@ import android.media.Image;
  */
 
 public interface OnFrameDecodeListener {
-    void onFrameDecode(Image frameImage,long frameTimeUs);
+    void onFrameDecode(Image frameImage,long frameTimeUs,boolean end);
+    void onDecodeError(Throwable t);
 }
