@@ -45,10 +45,12 @@ public class MediaFramePool {
     }
 
     public void cacheObject(MediaFrame mediaFrame){
+        CL.i( "cacheObject,size:" + cacheQueue.size());
         cacheQueue.offer(mediaFrame);
     }
 
     public MediaFrame getCachedObject(){
+        CL.i( "getCachedObject,size:" + cacheQueue.size());
         return cacheQueue.poll();
     }
 

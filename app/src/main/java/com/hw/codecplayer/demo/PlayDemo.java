@@ -85,7 +85,7 @@ public class PlayDemo {
                 v[vIndex++] = YUVBuffer.get(i);
             }
         }
-
+        mMediaFramePool.cacheObject(mediaFrame);
         frameRenderer.update(y, u, v);
     }
 }
