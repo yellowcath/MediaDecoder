@@ -5,6 +5,7 @@ import android.opengl.GLSurfaceView;
 import android.opengl.GLSurfaceView.Renderer;
 import android.util.DisplayMetrics;
 import com.hw.codecplayer.demo.PlayDemo;
+import com.hw.codecplayer.util.MediaFramePool;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -23,12 +24,12 @@ public class GLFrameRenderer implements Renderer {
     private ByteBuffer v;
     private PlayDemo playDemo;
 
-    public GLFrameRenderer(ISimplePlayer callback, GLSurfaceView surface, DisplayMetrics dm) {
+    public GLFrameRenderer(ISimplePlayer callback, GLSurfaceView surface, DisplayMetrics dm, MediaFramePool pool) {
         mParentAct = callback;
         mTargetSurface = surface;
         mScreenWidth = dm.widthPixels;
         mScreenHeight = dm.heightPixels;
-        playDemo = new PlayDemo(this);
+        playDemo = new PlayDemo(this,pool);
 
     }
 

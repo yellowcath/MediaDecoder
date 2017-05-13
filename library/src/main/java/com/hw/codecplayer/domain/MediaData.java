@@ -1,4 +1,4 @@
-package com.hw.codecplayer.extractor;
+package com.hw.codecplayer.domain;
 
 /**
  * Created by huangwei on 2017/5/9.

@@ -9,8 +9,8 @@ import android.support.test.runner.AndroidJUnit4;
 import com.hw.codecplayer.codec.MediaLoader;
 import com.hw.codecplayer.codec.OnFrameDecodeListener;
 import com.hw.codecplayer.demo.util.AssetsUtil;
-import com.hw.codecplayer.extractor.MediaData;
-import com.hw.codecplayer.extractor.SeekThread;
+import com.hw.codecplayer.domain.MediaData;
+import com.hw.codecplayer.util.RunnableThread;
 import com.hw.codecplayer.util.CL;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,7 +36,7 @@ public class MediaLoaderTest {
         }
 
         final MediaData data = new MediaData(videoFile1.getAbsolutePath(), 8000, 12000);
-        SeekThread seekThread = new SeekThread("seek");
+        RunnableThread seekThread = new RunnableThread("seek");
         seekThread.start();
         MediaLoader mCurLoader = new MediaLoader(new MediaExtractor(), data, seekThread, 50);
         mCurLoader.loadAndSeekAsync();

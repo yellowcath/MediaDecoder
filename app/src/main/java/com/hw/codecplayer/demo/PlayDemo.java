@@ -2,7 +2,11 @@ package com.hw.codecplayer.demo;
 
 import android.os.SystemClock;
 import com.hw.codecplayer.demo.gl.GLFrameRenderer;
+import com.hw.codecplayer.domain.MediaFrame;
 import com.hw.codecplayer.util.CL;
+import com.hw.codecplayer.util.MediaFramePool;
+
+import java.nio.ByteBuffer;
 
 /**
  * Created by huangwei on 2017/5/6.
@@ -14,9 +18,11 @@ public class PlayDemo {
     private byte[] y;
     private byte[] u;
     private byte[] v;
+    private MediaFramePool mMediaFramePool;
 
-    public PlayDemo(GLFrameRenderer renderer) {
+    public PlayDemo(GLFrameRenderer renderer, MediaFramePool pool) {
         frameRenderer = renderer;
+        mMediaFramePool = pool;
     }
 
     public void start() {
@@ -31,25 +37,55 @@ public class PlayDemo {
     }
 
     private void startImpl() {
-        MyImage myImage = null;
+        MediaFrame mediaFrame = null;
         try {
-            myImage = FrameQueue.poll();
+            mediaFrame = mMediaFramePool.poll();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        if (myImage == null) {
+        if (mediaFrame == null) {
             return;
         }
         if (mStartTimeMs == 0) {
             mStartTimeMs = System.currentTimeMillis();
         }
         long currentTimeMs = System.currentTimeMillis();
-        CL.i("sleep","frameTimeMs:"+myImage.timeUs/1000+"ms");
-        long showTimeMs = mStartTimeMs + myImage.timeUs/1000;
+        CL.i("sleep","frameTimeMs:"+mediaFrame.timestampUs/1000+"ms");
+        long showTimeMs = mStartTimeMs + mediaFrame.timestampUs/1000;
         if (showTimeMs > currentTimeMs) {
             CL.i("sleep","sleeptime:"+(showTimeMs-currentTimeMs)+"ms");
             SystemClock.sleep(showTimeMs-currentTimeMs);
         }
-        frameRenderer.update(myImage.y, myImage.u, myImage.v);
+
+        int ySize = mediaFrame.width*mediaFrame.height;
+        int uvSize = ySize/4;
+        if(y ==null || y.length!=ySize){
+            y = new byte[ySize];
+        }
+        if(u ==null || u.length!=ySize){
+            u = new byte[uvSize];
+        }
+        if(v ==null || v.length!=ySize){
+            v = new byte[uvSize];
+        }
+        ByteBuffer YUVBuffer = mediaFrame.YUVBuffer;
+
+        YUVBuffer.get(y);
+        int uIndex = 0;
+        int vIndex = 0;
+        int size = ySize+uvSize*2;
+        for (int i = ySize; i < size; i++) {
+            if(i>=YUVBuffer.capacity()){
+                CL.i("i:"+i);
+                break;
+            }
+            if (i % 2 == 0) {
+                u[uIndex++] = YUVBuffer.get(i);
+            } else {
+                v[vIndex++] = YUVBuffer.get(i);
+            }
+        }
+
+        frameRenderer.update(y, u, v);
     }
 }

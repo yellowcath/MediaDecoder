@@ -12,8 +12,10 @@ import com.hw.codecplayer.codec.OnFrameDecodeListener;
 import com.hw.codecplayer.demo.gl.GLFrameRenderer;
 import com.hw.codecplayer.demo.gl.ISimplePlayer;
 import com.hw.codecplayer.demo.util.AssetsUtil;
-import com.hw.codecplayer.extractor.MediaData;
-import com.hw.codecplayer.extractor.SeekThread;
+import com.hw.codecplayer.domain.MediaData;
+import com.hw.codecplayer.domain.MediaFrame;
+import com.hw.codecplayer.util.MediaFramePool;
+import com.hw.codecplayer.util.RunnableThread;
 import com.hw.codecplayer.util.CL;
 
 import java.io.File;
@@ -28,8 +30,8 @@ public class MainActivity extends AppCompatActivity {
     private GLSurfaceView mPreviewView;
 
     private long mStartTime;
-    private SeekThread mSeekThread;
-
+    private RunnableThread mSeekThread;
+    private MediaFramePool mFramePool = new MediaFramePool(10,10);
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,9 +50,9 @@ public class MainActivity extends AppCompatActivity {
             public void onReceiveState(int state) {
 
             }
-        }, mPreviewView, displayMetrics);
+        }, mPreviewView, displayMetrics,mFramePool);
         mPreviewView.setRenderer(renderer);
-        mSeekThread = new SeekThread("123");
+        mSeekThread = new RunnableThread("123");
         mSeekThread.start();
         initDecoder(renderer);
     }
@@ -107,7 +109,6 @@ public class MainActivity extends AppCompatActivity {
             MediaFormat currentMediaFormat = mediaDecoder.getCurrentMediaFormat();
             int w = currentMediaFormat.getInteger(MediaFormat.KEY_WIDTH);
             int h = currentMediaFormat.getInteger(MediaFormat.KEY_HEIGHT);
-            FrameQueue.preparePool(w,h);
             renderer.update(w, h);
         } catch (Exception e) {
             e.printStackTrace();
@@ -116,30 +117,35 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void offerImage(Image image, long timeUs) {
-        MyImage myImage = new MyImage();
-        myImage.timeUs = timeUs;
-        Image.Plane[] planes = image.getPlanes();
-        ByteBuffer bufferY = planes[0].getBuffer();
-        ByteBuffer bufferUV = planes[1].getBuffer();
-
-        myImage.y = new byte[planes[0].getBuffer().remaining()];
-        bufferY.get(myImage.y);
-        int uSize = image.getWidth() * image.getHeight() / 4;
-        myImage.u = new byte[uSize];
-        myImage.v = new byte[uSize];
-        int uIndex = 0, vIndex = 0;
-        int uvSize = bufferUV.remaining();
-        for (int i = 0; i < uvSize; i++) {
-            if (i % 2 == 0) {
-                myImage.u[uIndex++] = bufferUV.get(i);
-            } else {
-                myImage.v[vIndex++] = bufferUV.get(i);
-            }
-        }
-        try {
-            FrameQueue.offer(myImage);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        MediaFrame mediaFrame = mFramePool.getCachedObject();
+        mediaFrame = mediaFrame==null?MediaFrame.createFromImage(image,timeUs):MediaFrame.resetFromImage(image,timeUs,mediaFrame);
+        mFramePool.offer(mediaFrame);
     }
+//    private void offerImage(Image image, long timeUs) {
+//        MyImage myImage = new MyImage();
+//        myImage.timeUs = timeUs;
+//        Image.Plane[] planes = image.getPlanes();
+//        ByteBuffer bufferY = planes[0].getBuffer();
+//        ByteBuffer bufferUV = planes[1].getBuffer();
+//
+//        myImage.y = new byte[planes[0].getBuffer().remaining()];
+//        bufferY.get(myImage.y);
+//        int uSize = image.getWidth() * image.getHeight() / 4;
+//        myImage.u = new byte[uSize];
+//        myImage.v = new byte[uSize];
+//        int uIndex = 0, vIndex = 0;
+//        int uvSize = bufferUV.remaining();
+//        for (int i = 0; i < uvSize; i++) {
+//            if (i % 2 == 0) {
+//                myImage.u[uIndex++] = bufferUV.get(i);
+//            } else {
+//                myImage.v[vIndex++] = bufferUV.get(i);
+//            }
+//        }
+//        try {
+//            FrameQueue.offer(myImage);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+//    }
 }

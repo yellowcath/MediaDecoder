@@ -5,8 +5,8 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
-import com.hw.codecplayer.extractor.MediaData;
-import com.hw.codecplayer.extractor.SeekThread;
+import com.hw.codecplayer.domain.MediaData;
+import com.hw.codecplayer.util.RunnableThread;
 import com.hw.codecplayer.util.CL;
 import com.hw.codecplayer.util.MediaUtil;
 
@@ -31,7 +31,7 @@ public class MediaLoader implements IMediaLoader {
     private CountDownLatch mSeekLatch;
     private CountDownLatch mDecodeLatch;
 
-    private SeekThread mHandlerThread;
+    private RunnableThread mHandlerThread;
     private MediaExtractor mMediaExtractor;
     private MediaCodec mMediaCodec;
     private MediaData mMediaData;
@@ -46,7 +46,7 @@ public class MediaLoader implements IMediaLoader {
     private Mode mMode;
     private OnFrameDecodeListener mOnFrameDecodeListener;
 
-    public MediaLoader(MediaExtractor mediaExtractor, MediaData mediaData, SeekThread seekThread, long seekAccuracyMs) {
+    public MediaLoader(MediaExtractor mediaExtractor, MediaData mediaData, RunnableThread seekThread, long seekAccuracyMs) {
         mHandlerThread = seekThread;
         mMediaExtractor = mediaExtractor;
         mSeekAccuracyMs = seekAccuracyMs;
@@ -74,7 +74,7 @@ public class MediaLoader implements IMediaLoader {
 
         mMediaCodec = MediaCodec.createDecoderByType(mime);
         trackFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
-                MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
+                MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar);
         mMediaCodec.configure(trackFormat, null, null, 0);
         mMode = Mode.SEEK;
     }

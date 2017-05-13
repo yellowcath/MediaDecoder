@@ -4,8 +4,8 @@ import android.media.Image;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.support.annotation.NonNull;
-import com.hw.codecplayer.extractor.MediaData;
-import com.hw.codecplayer.extractor.SeekThread;
+import com.hw.codecplayer.domain.MediaData;
+import com.hw.codecplayer.util.RunnableThread;
 import com.hw.codecplayer.util.CL;
 
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ public class MediaDecoder implements IMediaDecoder, OnFrameDecodeListener {
     private MediaData mCurData;
     private int mCurIndex;
     private MediaLoader mCurLoader, mNextLoader;
-    private SeekThread mCurThread, mNextThread;
+    private RunnableThread mCurThread, mNextThread;
     /**
      * seek时的精度，单位ms
      */
@@ -49,12 +49,12 @@ public class MediaDecoder implements IMediaDecoder, OnFrameDecodeListener {
 
         //异步加载第二个
         if (mDataList.size() > 1) {
-            mNextThread = new SeekThread("SeekThread2");
+            mNextThread = new RunnableThread("SeekThread2");
             mNextThread.start();
             preLoad(mDataList.get(1), mNextThread);
         }
         //同步加载第一个
-        mCurThread = new SeekThread("SeekThread1");
+        mCurThread = new RunnableThread("SeekThread1");
         mCurThread.start();
         mCurLoader = new MediaLoader(new MediaExtractor(), firstData, mCurThread, mSeekAccuracyMs);
         mCurLoader.loadAndSeekAsync();
@@ -65,7 +65,7 @@ public class MediaDecoder implements IMediaDecoder, OnFrameDecodeListener {
 
     }
 
-    private void preLoad(@NonNull MediaData mediaData, SeekThread thread) {
+    private void preLoad(@NonNull MediaData mediaData, RunnableThread thread) {
         CL.i("预加载下一个视频:" + mediaData.mediaPath);
         mNextLoader = new MediaLoader(new MediaExtractor(), mediaData, thread, mSeekAccuracyMs);
         mNextLoader.loadAndSeekAsync();

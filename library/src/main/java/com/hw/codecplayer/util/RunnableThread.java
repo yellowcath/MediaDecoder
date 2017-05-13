@@ -1,4 +1,4 @@
-package com.hw.codecplayer.extractor;
+package com.hw.codecplayer.util;
 
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -10,12 +10,12 @@ import java.util.List;
  * Created by huangwei on 2017/5/11.
  */
 
-public class SeekThread extends HandlerThread {
+public class RunnableThread extends HandlerThread {
 
     private Handler mHandler;
     private List<Runnable> mRunnableList = new LinkedList<>();
 
-    public SeekThread(String name) {
+    public RunnableThread(String name) {
         super(name);
     }
 
@@ -48,5 +48,4 @@ public class SeekThread extends HandlerThread {
             mHandler.post(r);
         }
     }
-
 }

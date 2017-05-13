@@ -8,13 +8,14 @@ import android.support.test.runner.AndroidJUnit4;
 import com.hw.codecplayer.codec.MediaDecoder;
 import com.hw.codecplayer.codec.OnFrameDecodeListener;
 import com.hw.codecplayer.demo.util.AssetsUtil;
-import com.hw.codecplayer.extractor.MediaData;
+import com.hw.codecplayer.domain.MediaData;
 import com.hw.codecplayer.util.CL;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,6 +55,10 @@ public class MediaDecodeTest {
             @Override
             public void onFrameDecode(Image frameImage, long frameTimeUs, boolean end) {
                 CL.i("onFrameDecode,frameTimeUs:" + frameTimeUs + " end:" + end);
+                long s = System.currentTimeMillis();
+//                ByteBuffer byteBuffer = ByteBuffer.allocate((int) (frameImage.getWidth()*frameImage.getHeight()*1.5f));
+                long e = System.currentTimeMillis();
+                CL.i("getPlanes:"+(e-s)+"ms");
             }
 
             @Override
