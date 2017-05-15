@@ -145,6 +145,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         try {
+            mediaDecoder.setLoop(true);
             mediaDecoder.prepare();
             MediaFormat currentMediaFormat = mediaDecoder.getCurrentMediaFormat();
             int w = currentMediaFormat.getInteger(MediaFormat.KEY_WIDTH);

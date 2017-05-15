@@ -38,8 +38,12 @@ public class MediaDecoder implements IMediaDecoder, OnFrameDecodeListener {
     private OnFrameDecodeListener mFrameDecodeListener;
     private long mTotalTimestampUs;
     private long mPreFrameTimestampUs;
+    private boolean mLoop;
 
     public MediaDecoder(List<MediaData> mediaDataList) {
+        if (mediaDataList == null || mediaDataList.size() == 0) {
+            throw new IllegalArgumentException("mediaDataList is null or empty!");
+        }
         mDataList = new ArrayList<>(mediaDataList);
     }
 
@@ -48,10 +52,11 @@ public class MediaDecoder implements IMediaDecoder, OnFrameDecodeListener {
         MediaData firstData = mDataList.get(0);
 
         //异步加载第二个
-        if (mDataList.size() > 1) {
+        if (mDataList.size() > 1 || mLoop) {
             mNextThread = new RunnableThread("SeekThread2");
             mNextThread.start();
-            preLoad(mDataList.get(1), mNextThread);
+            MediaData nextData = mDataList.size() > 1 ? mDataList.get(1) : mDataList.get(0);
+            preLoad(nextData, mNextThread);
         }
         //同步加载第一个
         mCurThread = new RunnableThread("SeekThread1");
@@ -116,9 +121,10 @@ public class MediaDecoder implements IMediaDecoder, OnFrameDecodeListener {
             }
         } else {
             mPreFrameTimestampUs = 0;
-            mTotalTimestampUs += DEFAULT_FRAME_INTERVAL_MS*1000;
+            mTotalTimestampUs += DEFAULT_FRAME_INTERVAL_MS * 1000;
             CL.i(mCurData.toString() + "解码结束");
-            if (mCurIndex == mDataList.size() - 1) {
+            int nextIndex = getNextIndex(mCurIndex);
+            if (nextIndex==-1) {
                 CL.i("已经是最后一个片段，解码结束");
                 if (mFrameDecodeListener != null) {
                     mFrameDecodeListener.onFrameDecode(null, 0, true);
@@ -143,13 +149,14 @@ public class MediaDecoder implements IMediaDecoder, OnFrameDecodeListener {
             mCurLoader.release();
             mCurLoader.setOnFrameDecodeListener(null);
             mCurLoader = mNextLoader;
-            mCurIndex++;
+            mCurIndex = nextIndex;
             mCurData = mDataList.get(mCurIndex);
             mCurLoader.setOnFrameDecodeListener(this);
             //如果有再下一个片段，继续预加载
-            if (mCurIndex < mDataList.size() - 1) {
+            nextIndex = getNextIndex(mCurIndex);
+            if (nextIndex!=-1) {
                 CL.i("预加载下一个片段");
-                preLoad(mDataList.get(mCurIndex + 1), mCurThread);
+                preLoad(mDataList.get(nextIndex), mCurThread);
             }
             //启动
             mCurThread = mNextThread;
@@ -157,10 +164,26 @@ public class MediaDecoder implements IMediaDecoder, OnFrameDecodeListener {
         }
     }
 
+    /**
+     * @return -1代表没有下一个了
+     */
+    private int getNextIndex(int curIndex){
+        if(curIndex<mDataList.size()-1){
+            return curIndex+1;
+        }else if(mLoop){
+            return 0;
+        }
+        return -1;
+    }
+
     @Override
     public void onDecodeError(Throwable t) {
         if (mFrameDecodeListener != null) {
             mFrameDecodeListener.onDecodeError(t);
         }
+    }
+
+    public void setLoop(boolean loop) {
+        mLoop = loop;
     }
 }
