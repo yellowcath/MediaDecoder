@@ -73,7 +73,9 @@ public class PlayDemo {
                 capacity1, capacity2, capacity3,
                 mediaFrame.pixelStride1, mediaFrame.pixelStride2, mediaFrame.pixelStride3,
                 mediaFrame.rowStride1, mediaFrame.rowStride2, mediaFrame.rowStride3,
-                mediaFrame.width, y, u, v);
+                mediaFrame.width,mediaFrame.height,
+                mediaFrame.cropRect.left,mediaFrame.cropRect.top,mediaFrame.cropRect.right,mediaFrame.cropRect.bottom,
+                y, u, v);
         long e = System.currentTimeMillis();
         if(CL.isLogEnable()) {
             CL.i(String.format("planesToYUV,%dX%d,takes %dms", mediaFrame.width, mediaFrame.height, e - s));
@@ -83,7 +85,7 @@ public class PlayDemo {
     }
 
     private void checkInit(MediaFrame mediaFrame) {
-        int ySize = mediaFrame.width * mediaFrame.height;
+        int ySize = mediaFrame.cropRect.width()*mediaFrame.cropRect.height();
         if (y == null || y.capacity() < ySize) {
             y = ByteBuffer.allocateDirect(ySize);
         }

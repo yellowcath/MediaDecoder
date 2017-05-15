@@ -15,7 +15,6 @@ import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,15 +26,15 @@ public class MediaDecodeTest {
     @Test
     public void testSeek(){
         CL.setLogEnable(true);
-        Context appContext = InstrumentationRegistry.getTargetContext();
+        final Context appContext = InstrumentationRegistry.getTargetContext();
         File videoFile1 = new File(appContext.getCacheDir(), "1.mp4");
         File videoFile2 = new File(appContext.getCacheDir(), "2.mp4");
         File videoFile3 = new File(appContext.getCacheDir(), "3.mp4");
 
         try {
-            AssetsUtil.copyAssetsFileTo(appContext, "1.mp4", videoFile1.getAbsoluteFile());
-            AssetsUtil.copyAssetsFileTo(appContext, "2.mp4", videoFile2.getAbsoluteFile());
-            AssetsUtil.copyAssetsFileTo(appContext, "3.mp4", videoFile3.getAbsoluteFile());
+            AssetsUtil.copyAssetsFileTo(appContext, "GOPR1996.MP4", videoFile1.getAbsoluteFile());
+            AssetsUtil.copyAssetsFileTo(appContext, "GOPR2002.MP4", videoFile2.getAbsoluteFile());
+            AssetsUtil.copyAssetsFileTo(appContext, "GOPR2019.MP4", videoFile3.getAbsoluteFile());
 
         } catch (IOException e) {
             e.printStackTrace();
