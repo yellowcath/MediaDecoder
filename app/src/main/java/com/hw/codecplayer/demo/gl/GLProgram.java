@@ -1,9 +1,11 @@
 package com.hw.codecplayer.demo.gl;
 
+import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import android.content.Context;
 import android.opengl.GLES20;
 
 
@@ -42,7 +44,7 @@ public class GLProgram {
     private int _video_height = -1;
     // flow control
     private boolean isProgBuilt = false;
-
+    private Context mContext;
     /**
      * position can only be 0~4:<br/>
      * fullscreen => 0<br/>
@@ -51,10 +53,11 @@ public class GLProgram {
      * left-bottom => 3<br/>
      * right-bottom => 4
      */
-    public GLProgram(int position) {
+    public GLProgram(Context context, int position) {
         if (position < 0 || position > 4) {
             throw new RuntimeException("Index can only be 0 to 4");
         }
+        mContext = context;
         mWinPosition = position;
         setup(mWinPosition);
     }
@@ -120,7 +123,7 @@ public class GLProgram {
     public void buildProgram() {
         // TODO createBuffers(_vertices, coordVertices);
         if (_program <= 0) {
-            _program = createProgram(VERTEX_SHADER, FRAGMENT_SHADER);
+            _program = createProgram();
         }
         Utils.LOGD("_program = " + _program);
 
@@ -282,10 +285,20 @@ public class GLProgram {
     /**
      * create program and load shaders, fragment shader is very important.
      */
-    public int createProgram(String vertexSource, String fragmentSource) {
+    public int createProgram() {
         // create shaders
-        int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexSource);
-        int pixelShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentSource);
+        String vertexShaderStr = null;
+        String fragmentShaderStr = null;
+
+        try {
+            vertexShaderStr = Utils.readStringForAssets(mContext,"shader/vertex.glsl");
+            fragmentShaderStr = Utils.readStringForAssets(mContext,"shader/fragment.glsl");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderStr);
+        int pixelShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderStr);
         // just check
         Utils.LOGD("vertexShader = " + vertexShader);
         Utils.LOGD("pixelShader = " + pixelShader);
@@ -365,15 +378,4 @@ public class GLProgram {
     static float[] squareVertices4 = { 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, }; // right-top
 
     private static float[] coordVertices = { 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, };// whole-texture
-
-    private static final String VERTEX_SHADER = "attribute vec4 vPosition;\n" + "attribute vec2 a_texCoord;\n"
-            + "varying vec2 tc;\n" + "void main() {\n" + "gl_Position = vPosition;\n" + "tc = a_texCoord;\n" + "}\n";
-
-    private static final String FRAGMENT_SHADER = "precision mediump float;\n" + "uniform sampler2D tex_y;\n"
-            + "uniform sampler2D tex_u;\n" + "uniform sampler2D tex_v;\n" + "varying vec2 tc;\n" + "void main() {\n"
-            + "vec4 c = vec4((texture2D(tex_y, tc).r - 16./255.) * 1.164);\n"
-            + "vec4 U = vec4(texture2D(tex_u, tc).r - 128./255.);\n"
-            + "vec4 V = vec4(texture2D(tex_v, tc).r - 128./255.);\n" + "c += V * vec4(1.596, -0.813, 0, 0);\n"
-            + "c += U * vec4(0, -0.392, 2.017, 0);\n" + "c.a = 1.0;\n" + "gl_FragColor = c;\n" + "}\n";
-
 }

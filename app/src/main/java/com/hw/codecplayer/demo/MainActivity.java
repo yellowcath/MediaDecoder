@@ -5,8 +5,10 @@ import android.media.Image;
 import android.media.MediaFormat;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.support.v4.widget.TextViewCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
+import android.widget.TextView;
 import com.hw.codecplayer.codec.MediaDecoder;
 import com.hw.codecplayer.codec.OnFrameDecodeListener;
 import com.hw.codecplayer.demo.gl.GLFrameRenderer;
@@ -15,29 +17,38 @@ import com.hw.codecplayer.demo.util.AssetsUtil;
 import com.hw.codecplayer.domain.MediaData;
 import com.hw.codecplayer.domain.MediaFrame;
 import com.hw.codecplayer.util.MediaFramePool;
+import com.hw.codecplayer.util.NativeUtil;
 import com.hw.codecplayer.util.RunnableThread;
 import com.hw.codecplayer.util.CL;
 
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     private MediaDecoder mMediaDecoder;
     private GLSurfaceView mPreviewView;
+    private TextView mTextView;
 
     private long mStartTime;
     private RunnableThread mSeekThread;
-    private MediaFramePool mFramePool = new MediaFramePool(10,10);
+    private MediaFramePool mFramePool = new MediaFramePool(10, 10);
+    private volatile int mFrameDrawCount;
+    private volatile long mStartDrawTime;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        CL.setLogEnable(true);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mTextView = (TextView) findViewById(R.id.textview);
         mPreviewView = (GLSurfaceView) findViewById(R.id.previewview);
-
         DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
         mPreviewView.setEGLContextClientVersion(2);
         final GLFrameRenderer renderer = new GLFrameRenderer(new ISimplePlayer() {
@@ -50,11 +61,40 @@ public class MainActivity extends AppCompatActivity {
             public void onReceiveState(int state) {
 
             }
-        }, mPreviewView, displayMetrics,mFramePool);
+        }, mPreviewView, displayMetrics, mFramePool) {
+
+            @Override
+            public void onDrawFrame(GL10 gl) {
+                super.onDrawFrame(gl);
+                mFrameDrawCount++;
+                if (mStartDrawTime == 0) {
+                    mStartDrawTime = System.currentTimeMillis();
+                }
+                showFrameRate();
+            }
+        };
         mPreviewView.setRenderer(renderer);
         mSeekThread = new RunnableThread("123");
         mSeekThread.start();
         initDecoder(renderer);
+    }
+
+    private void showFrameRate() {
+        mTextView.post(new Runnable() {
+            @Override
+            public void run() {
+                float second = (System.currentTimeMillis() - mStartDrawTime) / 1000f;
+                float frameRate = mFrameDrawCount / second;
+                mTextView.setText("fps:" + (int)frameRate);
+            }
+        });
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mFrameDrawCount = 0;
+        mStartDrawTime = 0;
     }
 
     private void initDecoder(GLFrameRenderer renderer) {
@@ -118,7 +158,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void offerImage(Image image, long timeUs) {
         MediaFrame mediaFrame = mFramePool.getCachedObject();
-        mediaFrame = mediaFrame==null?MediaFrame.createFromImage(image,timeUs):MediaFrame.resetFromImage(image,timeUs,mediaFrame);
+        mediaFrame = mediaFrame == null ? MediaFrame.createFromImage(image, timeUs) : MediaFrame.resetFromImage(image, timeUs, mediaFrame);
         mFramePool.offer(mediaFrame);
     }
 //    private void offerImage(Image image, long timeUs) {

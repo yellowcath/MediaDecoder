@@ -5,6 +5,7 @@ import com.hw.codecplayer.demo.gl.GLFrameRenderer;
 import com.hw.codecplayer.domain.MediaFrame;
 import com.hw.codecplayer.util.CL;
 import com.hw.codecplayer.util.MediaFramePool;
+import com.hw.codecplayer.util.NativeUtil;
 
 import java.nio.ByteBuffer;
 
@@ -15,10 +16,11 @@ public class PlayDemo {
 
     private long mStartTimeMs;
     private GLFrameRenderer frameRenderer;
-    private byte[] y;
-    private byte[] u;
-    private byte[] v;
     private MediaFramePool mMediaFramePool;
+
+    private ByteBuffer y;
+    private ByteBuffer u;
+    private ByteBuffer v;
 
     public PlayDemo(GLFrameRenderer renderer, MediaFramePool pool) {
         frameRenderer = renderer;
@@ -46,46 +48,51 @@ public class PlayDemo {
         if (mediaFrame == null) {
             return;
         }
+
         if (mStartTimeMs == 0) {
             mStartTimeMs = System.currentTimeMillis();
         }
+        checkInit(mediaFrame);
         long currentTimeMs = System.currentTimeMillis();
-        CL.i("sleep","frameTimeMs:"+mediaFrame.timestampUs/1000+"ms");
-        long showTimeMs = mStartTimeMs + mediaFrame.timestampUs/1000;
+        CL.i("sleep", "frameTimeMs:" + mediaFrame.timestampUs / 1000 + "ms");
+        long showTimeMs = mStartTimeMs + mediaFrame.timestampUs / 1000;
         if (showTimeMs > currentTimeMs) {
-            CL.i("sleep","sleeptime:"+(showTimeMs-currentTimeMs)+"ms");
-            SystemClock.sleep(showTimeMs-currentTimeMs);
+            CL.i("sleep", "sleeptime:" + (showTimeMs - currentTimeMs) + "ms");
+            SystemClock.sleep(showTimeMs - currentTimeMs);
         }
 
-        int ySize = mediaFrame.width*mediaFrame.height;
-        int uvSize = ySize/4;
-        if(y ==null || y.length!=ySize){
-            y = new byte[ySize];
-        }
-        if(u ==null || u.length!=ySize){
-            u = new byte[uvSize];
-        }
-        if(v ==null || v.length!=ySize){
-            v = new byte[uvSize];
-        }
-        ByteBuffer YUVBuffer = mediaFrame.YUVBuffer;
+        int capacity1 = mediaFrame.buffer1.capacity();
+        int capacity2 = mediaFrame.buffer2.capacity();
+        int capacity3 = mediaFrame.buffer3.capacity();
 
-        YUVBuffer.get(y);
-        int uIndex = 0;
-        int vIndex = 0;
-        int size = ySize+uvSize*2;
-        for (int i = ySize; i < size; i++) {
-            if(i>=YUVBuffer.capacity()){
-                CL.i("i:"+i);
-                break;
-            }
-            if (i % 2 == 0) {
-                u[uIndex++] = YUVBuffer.get(i);
-            } else {
-                v[vIndex++] = YUVBuffer.get(i);
-            }
+        y.clear();
+        u.clear();
+        v.clear();
+        long s = System.currentTimeMillis();
+        NativeUtil.planesToYUV(mediaFrame.buffer1, mediaFrame.buffer2, mediaFrame.buffer3,
+                capacity1, capacity2, capacity3,
+                mediaFrame.pixelStride1, mediaFrame.pixelStride2, mediaFrame.pixelStride3,
+                mediaFrame.rowStride1, mediaFrame.rowStride2, mediaFrame.rowStride3,
+                mediaFrame.width, y, u, v);
+        long e = System.currentTimeMillis();
+        if(CL.isLogEnable()) {
+            CL.i(String.format("planesToYUV,%dX%d,takes %dms", mediaFrame.width, mediaFrame.height, e - s));
         }
         mMediaFramePool.cacheObject(mediaFrame);
         frameRenderer.update(y, u, v);
+    }
+
+    private void checkInit(MediaFrame mediaFrame) {
+        int ySize = mediaFrame.width * mediaFrame.height;
+        if (y == null || y.capacity() < ySize) {
+            y = ByteBuffer.allocateDirect(ySize);
+        }
+        int uvSize = ySize / 4;
+        if (u == null || u.capacity() < uvSize) {
+            u = ByteBuffer.allocateDirect(uvSize);
+        }
+        if (v == null || v.capacity() < uvSize) {
+            v = ByteBuffer.allocateDirect(uvSize);
+        }
     }
 }

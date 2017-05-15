@@ -5,6 +5,7 @@ import android.graphics.Rect;
 import android.media.Image;
 import com.hw.codecplayer.util.CL;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 /**
@@ -12,7 +13,18 @@ import java.nio.ByteBuffer;
  */
 
 public class MediaFrame {
-    public ByteBuffer YUVBuffer;
+    public ByteBuffer buffer1;
+    public ByteBuffer buffer2;
+    public ByteBuffer buffer3;
+
+    public int pixelStride1;
+    public int pixelStride2;
+    public int pixelStride3;
+
+    public int rowStride1;
+    public int rowStride2;
+    public int rowStride3;
+
     public int width;
     public int height;
     public Rect cropRect;
@@ -20,49 +32,45 @@ public class MediaFrame {
 
     public static MediaFrame resetFromImage(Image image, long timestampUs, MediaFrame mediaFrame) {
         checkFormat(image);
-        int capacity = mediaFrame.YUVBuffer.capacity();
         Image.Plane[] planes = image.getPlanes();
-        int ySize = planes[0].getBuffer().limit();
-        int uvSize = +planes[1].getBuffer().limit();
-        int size = ySize+uvSize;
-        if(capacity<size){
-            CL.e("原buffer空间不足:"+capacity+" 重新申请:"+size);
-            mediaFrame.YUVBuffer = ByteBuffer.allocateDirect(size);
-        }else{
-            mediaFrame.YUVBuffer.clear();
-        }
-        mediaFrame.YUVBuffer.put(planes[0].getBuffer());
-        mediaFrame.YUVBuffer.put(planes[1].getBuffer());
-        mediaFrame.YUVBuffer.flip();
+        mediaFrame.buffer1 = copyBuffer(mediaFrame.buffer1, planes[0].getBuffer());
+        mediaFrame.buffer2 = copyBuffer(mediaFrame.buffer2, planes[1].getBuffer());
+        mediaFrame.buffer3 = copyBuffer(mediaFrame.buffer3, planes[2].getBuffer());
+
+        mediaFrame.pixelStride1 = planes[0].getPixelStride();
+        mediaFrame.pixelStride2 = planes[1].getPixelStride();
+        mediaFrame.pixelStride3 = planes[2].getPixelStride();
+
+        mediaFrame.rowStride1 = planes[0].getRowStride();
+        mediaFrame.rowStride2 = planes[1].getRowStride();
+        mediaFrame.rowStride3 = planes[2].getRowStride();
 
         mediaFrame.width = image.getWidth();
         mediaFrame.height = image.getHeight();
         mediaFrame.cropRect = image.getCropRect();
         mediaFrame.timestampUs = timestampUs;
         return mediaFrame;
+    }
+
+    private static ByteBuffer copyBuffer(ByteBuffer dest, ByteBuffer src) {
+        int size = src.limit();
+        if (dest == null || dest.capacity() < size) {
+            dest = ByteBuffer.allocateDirect(size);
+        } else {
+            dest.clear();
+            dest.put(src);
+            dest.flip();
+        }
+        return dest;
     }
 
     public static MediaFrame createFromImage(Image image, long timestampUs) {
         checkFormat(image);
-        MediaFrame mediaFrame = new MediaFrame();
-        Image.Plane[] planes = image.getPlanes();
-        int ySize = planes[0].getBuffer().limit();
-        int uvSize = +planes[1].getBuffer().limit();
-        int size = ySize+uvSize;
-        mediaFrame.YUVBuffer = ByteBuffer.allocateDirect(size);
-        mediaFrame.YUVBuffer.put(planes[0].getBuffer());
-        mediaFrame.YUVBuffer.put(planes[1].getBuffer());
-        mediaFrame.YUVBuffer.flip();
-
-        mediaFrame.width = image.getWidth();
-        mediaFrame.height = image.getHeight();
-        mediaFrame.cropRect = image.getCropRect();
-        mediaFrame.timestampUs = timestampUs;
-        return mediaFrame;
+        return resetFromImage(image, timestampUs, new MediaFrame());
     }
 
-    private static void checkFormat(Image image) throws UnsupportedOperationException{
-        if(image.getFormat()!= ImageFormat.YUV_420_888){
+    private static void checkFormat(Image image) throws UnsupportedOperationException {
+        if (image.getFormat() != ImageFormat.YUV_420_888) {
             throw new UnsupportedOperationException("only support ImageFormat.YUV_420_888");
         }
     }

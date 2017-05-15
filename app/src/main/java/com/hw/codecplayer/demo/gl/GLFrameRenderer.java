@@ -16,7 +16,7 @@ public class GLFrameRenderer implements Renderer {
 
     private ISimplePlayer mParentAct;
     private GLSurfaceView mTargetSurface;
-    private GLProgram prog = new GLProgram(0);
+    private GLProgram prog;
     private int mScreenWidth, mScreenHeight;
     private int mVideoWidth, mVideoHeight;
     private ByteBuffer y;
@@ -30,7 +30,7 @@ public class GLFrameRenderer implements Renderer {
         mScreenWidth = dm.widthPixels;
         mScreenHeight = dm.heightPixels;
         playDemo = new PlayDemo(this,pool);
-
+        prog = new GLProgram(surface.getContext().getApplicationContext(),0);
     }
 
     @Override
@@ -109,27 +109,25 @@ public class GLFrameRenderer implements Renderer {
 
     /**
      * this method will be called from native code, it's used for passing yuv data to me.
+     * @param y
+     * @param u
+     * @param v
      */
-    public void update(byte[] ydata, byte[] udata, byte[] vdata) {
-        if(y==null){
+    public void update(ByteBuffer y, ByteBuffer u, ByteBuffer v) {
+        if(this.y ==null){
             return;
         }
-        synchronized (this) {
-            y.clear();
-            u.clear();
-            v.clear();
-            y.put(ydata, 0, ydata.length);
-//            u.put(udata, 0, udata.length);
-//            v.put(vdata, 0, vdata.length);
-            u.put(udata, 0, u.capacity());
-            v.put(vdata, 0, v.capacity());
+        synchronized (this){
+            this.y.clear();
+            this.u.clear();
+            this.v.clear();
+            this.y.put(y);
+            this.u.put(u);
+            this.v.put(v);
         }
-
         // request to render
         mTargetSurface.requestRender();
     }
-
-
 
     /**
      * this method will be called from native code, it's used for passing play state to activity.
