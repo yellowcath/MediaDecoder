@@ -7,6 +7,7 @@ import android.media.MediaExtractor;
 import android.media.MediaFormat;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * Created by huangwei on 2017/5/12.
@@ -88,5 +89,22 @@ public class MediaUtil {
 
         // no decoder found
         return null;
+    }
+
+    public static boolean tryCheckEmpty(ByteBuffer byteBuffer){
+        int checkCount = 50;
+        for(int i=0;i<checkCount;i++){
+            if(byteBuffer.get(i)!=0){
+                return false;
+            }
+        }
+
+        int mid = byteBuffer.capacity()/2;
+        for(int i=mid;i<mid + checkCount;i++){
+            if(byteBuffer.get(i)!=0){
+                return false;
+            }
+        }
+        return true;
     }
 }

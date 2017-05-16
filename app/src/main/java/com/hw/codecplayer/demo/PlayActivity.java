@@ -136,7 +136,12 @@ public class PlayActivity extends AppCompatActivity {
                     if (mStartDrawTime == 0) {
                         mStartDrawTime = System.currentTimeMillis();
                     }
-                    showFrameRate();
+                    if(mFrameDrawCount>30){
+                        mFrameDrawCount=0;
+                        mStartDrawTime = System.currentTimeMillis();
+                    }else {
+                        showFrameRate();
+                    }
                 }
             };
             mPreviewView.setRenderer(renderer);

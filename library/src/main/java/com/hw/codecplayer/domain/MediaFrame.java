@@ -54,11 +54,10 @@ public class MediaFrame {
         int size = src.limit();
         if (dest == null || dest.capacity() < size) {
             dest = ByteBuffer.allocateDirect(size);
-        } else {
-            dest.clear();
-            dest.put(src);
-            dest.flip();
         }
+        dest.clear();
+        dest.put(src);
+        dest.flip();
         return dest;
     }
 
