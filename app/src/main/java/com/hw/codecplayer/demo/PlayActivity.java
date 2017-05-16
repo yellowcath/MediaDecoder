@@ -34,6 +34,7 @@ public class PlayActivity extends AppCompatActivity {
     private MediaFramePool mFramePool = new MediaFramePool(10, 10);
     private volatile int mFrameDrawCount;
     private volatile long mStartDrawTime;
+    private GLFrameRenderer mFrameRenderer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +56,7 @@ public class PlayActivity extends AppCompatActivity {
             public void run() {
                 float second = (System.currentTimeMillis() - mStartDrawTime) / 1000f;
                 float frameRate = mFrameDrawCount / second;
-                mTextView.setText("fps:" + (int)frameRate);
+                mTextView.setText("fps:" + (int) frameRate);
             }
         });
     }
@@ -75,7 +76,7 @@ public class PlayActivity extends AppCompatActivity {
         File videoFile3 = new File(appContext.getCacheDir(), "3.mp4");
 
         try {
-            AssetsUtil.copyAssetsFileTo(appContext, "1.mp4", videoFile1.getAbsoluteFile());
+            AssetsUtil.copyAssetsFileTo(appContext, "GOPR1996.MP4", videoFile1.getAbsoluteFile());
 //            AssetsUtil.copyAssetsFileTo(appContext, "GOPR2002.MP4", videoFile2.getAbsoluteFile());
 //            AssetsUtil.copyAssetsFileTo(appContext, "GOPR2019.MP4", videoFile3.getAbsoluteFile());
 
@@ -94,7 +95,7 @@ public class PlayActivity extends AppCompatActivity {
         final MediaDecoder mediaDecoder = new MediaDecoder(dataList);
         mediaDecoder.setOnFrameDecodeListener(new OnFrameDecodeListener() {
             @Override
-            public void onFrameDecode(final Image frameImage, int codecColorFormat,final long frameTimeUs, boolean end) {
+            public void onFrameDecode(final Image frameImage, int codecColorFormat, final long frameTimeUs, boolean end) {
                 if (mStartTime == 0) {
                     mStartTime = System.currentTimeMillis();
                 }
@@ -102,14 +103,14 @@ public class PlayActivity extends AppCompatActivity {
                     long time = System.currentTimeMillis() - mStartTime;
                     CL.i("总计耗时:" + time + "ms");
                 }
-                if(CL.isLogEnable()) {
+                if (CL.isLogEnable()) {
 //                    String imageStr = String.format("%dX%d,cropRect:%s,format:%d", frameImage.getWidth(), frameImage.getHeight(), frameImage.getCropRect().toShortString(), frameImage.getFormat());
 //                    String uvplaneStr = String.format("pixelStride:%d,rowStride:%d", frameImage.getPlanes()[1].getPixelStride(), frameImage.getPlanes()[1].getRowStride());
                     CL.i("onFrameDecode,frameTimeUs:" + frameTimeUs + " end:" + end);
 //                    CL.i(imageStr+" \nuv:"+uvplaneStr);
                 }
                 if (!end) {
-                    offerImage(frameImage,codecColorFormat, frameTimeUs);
+                    offerImage(frameImage, codecColorFormat, frameTimeUs);
                 }
             }
 
@@ -126,7 +127,7 @@ public class PlayActivity extends AppCompatActivity {
             int w = currentMediaFormat.getInteger(MediaFormat.KEY_WIDTH);
             int h = currentMediaFormat.getInteger(MediaFormat.KEY_HEIGHT);
 
-            final GLFrameRenderer renderer = new GLFrameRenderer(mPreviewView, getResources().getDisplayMetrics(), mFramePool) {
+            mFrameRenderer = new GLFrameRenderer(mPreviewView, getResources().getDisplayMetrics(), mFramePool) {
 
                 @Override
                 public void onDrawFrame(GL10 gl) {
@@ -135,53 +136,34 @@ public class PlayActivity extends AppCompatActivity {
                     if (mStartDrawTime == 0) {
                         mStartDrawTime = System.currentTimeMillis();
                     }
-                    if(mFrameDrawCount>30){
-                        mFrameDrawCount=0;
+                    if (mFrameDrawCount > 30) {
+                        mFrameDrawCount = 0;
                         mStartDrawTime = System.currentTimeMillis();
-                    }else {
+                    } else {
                         showFrameRate();
                     }
                 }
             };
-            mPreviewView.setRenderer(renderer);
+            mPreviewView.setRenderer(mFrameRenderer);
             boolean useUVBuffer = MediaUtil.useUVBuffer(currentMediaFormat.getInteger(MediaFormat.KEY_COLOR_FORMAT));
-            renderer.update(w, h,useUVBuffer);
+            mFrameRenderer.update(w, h, useUVBuffer);
         } catch (Exception e) {
             e.printStackTrace();
         }
         mediaDecoder.start();
     }
 
-    private void offerImage(Image image,int codecColorFormat, long timeUs) {
+    private void offerImage(Image image, int codecColorFormat, long timeUs) {
         MediaFrame mediaFrame = mFramePool.getCachedObject();
-        mediaFrame = mediaFrame == null ? MediaFrame.createFromImage(image,codecColorFormat, timeUs) : MediaFrame.resetFromImage(image,codecColorFormat, timeUs, mediaFrame);
+        mediaFrame = mediaFrame == null ? MediaFrame.createFromImage(image, codecColorFormat, timeUs) : MediaFrame.resetFromImage(image, codecColorFormat, timeUs, mediaFrame);
         mFramePool.offer(mediaFrame);
     }
-//    private void offerImage(Image image, long timeUs) {
-//        MyImage myImage = new MyImage();
-//        myImage.timeUs = timeUs;
-//        Image.Plane[] planes = image.getPlanes();
-//        ByteBuffer bufferY = planes[0].getBuffer();
-//        ByteBuffer bufferUV = planes[1].getBuffer();
-//
-//        myImage.y = new byte[planes[0].getBuffer().remaining()];
-//        bufferY.get(myImage.y);
-//        int uSize = image.getWidth() * image.getHeight() / 4;
-//        myImage.u = new byte[uSize];
-//        myImage.v = new byte[uSize];
-//        int uIndex = 0, vIndex = 0;
-//        int uvSize = bufferUV.remaining();
-//        for (int i = 0; i < uvSize; i++) {
-//            if (i % 2 == 0) {
-//                myImage.u[uIndex++] = bufferUV.get(i);
-//            } else {
-//                myImage.v[vIndex++] = bufferUV.get(i);
-//            }
-//        }
-//        try {
-//            FrameQueue.offer(myImage);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
-//    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if(mFrameRenderer!=null){
+            mFrameRenderer.destroy();
+        }
+    }
 }

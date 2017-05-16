@@ -1,5 +1,6 @@
 package com.hw.codecplayer.demo;
 
+import android.media.MediaCodecInfo;
 import android.os.SystemClock;
 import com.hw.codecplayer.demo.gl.GLFrameRenderer;
 import com.hw.codecplayer.domain.MediaFrame;
@@ -22,6 +23,7 @@ public class PlayDemo {
     private ByteBuffer u;
     private ByteBuffer v;
     private ByteBuffer uv;
+    private volatile boolean mRun = true;
 
     public PlayDemo(GLFrameRenderer renderer, MediaFramePool pool) {
         frameRenderer = renderer;
@@ -32,14 +34,14 @@ public class PlayDemo {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                while (true) {
-                    startImpl();
+                while (mRun) {
+                    transform();
                 }
             }
         }).start();
     }
 
-    private void startImpl() {
+    private void transform() {
         MediaFrame mediaFrame = null;
         try {
             mediaFrame = mMediaFramePool.poll();
@@ -68,18 +70,46 @@ public class PlayDemo {
         }
     }
 
+    /**
+     * YUV420sp的情况直接拷贝
+     * @param mediaFrame
+     */
     private void transformAndUpdate420SP(MediaFrame mediaFrame) {
         y.clear();
         uv.clear();
         y.put(mediaFrame.buffer1);
-        uv.put(mediaFrame.buffer3);
+        uv.put(mediaFrame.buffer2);
         y.position(0);
         uv.position(0);
         mMediaFramePool.cacheObject(mediaFrame);
         frameRenderer.update(y, uv);
     }
-
+    /**
+     * YUV420p的情况直接拷贝
+     * @param mediaFrame
+     */
+    private void transformAndUpdate420P(MediaFrame mediaFrame){
+        y.clear();
+        u.clear();
+        v.clear();
+        y.put(mediaFrame.buffer1);
+        u.put(mediaFrame.buffer2);
+        v.put(mediaFrame.buffer3);
+        y.position(0);
+        u.position(0);
+        v.position(0);
+        mMediaFramePool.cacheObject(mediaFrame);
+        frameRenderer.update(y, u,v);
+    }
+    /**
+     * 其它情况根据Image的参数转换
+     * @param mediaFrame
+     */
     private void transformAndUpdateYUV(MediaFrame mediaFrame) {
+        if(mediaFrame.codecColorFormat == MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar){
+            transformAndUpdate420P(mediaFrame);
+            return;
+        }
         int capacity1 = mediaFrame.buffer1.capacity();
         int capacity2 = mediaFrame.buffer2.capacity();
         int capacity3 = mediaFrame.buffer3.capacity();
@@ -92,8 +122,7 @@ public class PlayDemo {
                 capacity1, capacity2, capacity3,
                 mediaFrame.pixelStride1, mediaFrame.pixelStride2, mediaFrame.pixelStride3,
                 mediaFrame.rowStride1, mediaFrame.rowStride2, mediaFrame.rowStride3,
-                mediaFrame.width, mediaFrame.height,
-                mediaFrame.cropRect.left, mediaFrame.cropRect.top, mediaFrame.cropRect.right, mediaFrame.cropRect.bottom,
+                mediaFrame.width,
                 y, u, v);
         long e = System.currentTimeMillis();
         if (CL.isLogEnable()) {
@@ -122,5 +151,9 @@ public class PlayDemo {
                 v = ByteBuffer.allocateDirect(uvSize);
             }
         }
+    }
+
+    public void release(){
+        mRun = false;
     }
 }

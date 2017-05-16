@@ -37,23 +37,26 @@ public class MediaFrame {
     public static MediaFrame resetFromImage(Image image,int codecColorFormat, long timestampUs, MediaFrame mediaFrame) {
         checkFormat(image);
         Image.Plane[] planes = image.getPlanes();
-        mediaFrame.buffer1 = copyBuffer(mediaFrame.buffer1, planes[0].getBuffer());
-        mediaFrame.buffer2 = copyBuffer(mediaFrame.buffer2, planes[1].getBuffer());
-        mediaFrame.buffer3 = copyBuffer(mediaFrame.buffer3, planes[2].getBuffer());
-
-        mediaFrame.pixelStride1 = planes[0].getPixelStride();
-        mediaFrame.pixelStride2 = planes[1].getPixelStride();
-        mediaFrame.pixelStride3 = planes[2].getPixelStride();
-
-        mediaFrame.rowStride1 = planes[0].getRowStride();
-        mediaFrame.rowStride2 = planes[1].getRowStride();
-        mediaFrame.rowStride3 = planes[2].getRowStride();
-
         mediaFrame.width = image.getWidth();
         mediaFrame.height = image.getHeight();
         mediaFrame.cropRect = image.getCropRect();
         mediaFrame.timestampUs = timestampUs;
         mediaFrame.codecColorFormat = codecColorFormat;
+
+        mediaFrame.buffer1 = copyBuffer(mediaFrame.buffer1, planes[0].getBuffer());
+        if (MediaUtil.useUVBuffer(codecColorFormat)) {
+            mediaFrame.buffer2 = copyBuffer(mediaFrame.buffer2, planes[2].getBuffer());
+        }else{
+            mediaFrame.buffer2 = copyBuffer(mediaFrame.buffer2, planes[1].getBuffer());
+            mediaFrame.buffer3 = copyBuffer(mediaFrame.buffer3, planes[2].getBuffer());
+            mediaFrame.pixelStride1 = planes[0].getPixelStride();
+            mediaFrame.pixelStride2 = planes[1].getPixelStride();
+            mediaFrame.pixelStride3 = planes[2].getPixelStride();
+
+            mediaFrame.rowStride1 = planes[0].getRowStride();
+            mediaFrame.rowStride2 = planes[1].getRowStride();
+            mediaFrame.rowStride3 = planes[2].getRowStride();
+        }
         return mediaFrame;
     }
 

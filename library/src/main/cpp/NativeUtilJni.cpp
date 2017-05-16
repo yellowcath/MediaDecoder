@@ -9,8 +9,7 @@ Java_com_hw_codecplayer_util_NativeUtil_planesToYUV(JNIEnv *env, jclass type, jo
                                                     jobject buffer3, jint capacity1, jint capacity2, jint capacity3,
                                                     jint pixelStride1, jint pixelStride2, jint pixelStride3,
                                                     jint rowStride1,jint rowStride2,jint rowStride3,
-                                                    jint width,jint height,
-                                                    jint cropLeft,jint cropTop,jint cropRight,jint cropBottom,
+                                                    jint width,
                                                     jobject bufferY, jobject bufferU,
                                                     jobject bufferV) {
 
@@ -25,11 +24,7 @@ Java_com_hw_codecplayer_util_NativeUtil_planesToYUV(JNIEnv *env, jclass type, jo
     int rStride3 = rowStride3;
 
     int w = width;
-    int h = height;
-    int left = cropLeft;
-    int top = cropTop;
-    int right = cropRight;
-    int bottom = cropBottom;
+
 
     unsigned char* data1 = (unsigned char *) env->GetDirectBufferAddress(buffer1);
     unsigned char* data2 = (unsigned char *) env->GetDirectBufferAddress(buffer2);
@@ -40,16 +35,7 @@ Java_com_hw_codecplayer_util_NativeUtil_planesToYUV(JNIEnv *env, jclass type, jo
     unsigned char* v =(unsigned char *)  env->GetDirectBufferAddress(bufferV);
 
     int uvWidth = w/2;
-    int uvHeight = h/2;
-    copyDataY(data1,len1,y,pStride1,rStride1,w,h,left,top,right,bottom);
-//    copyDataUV(data2,len2,u,pStride2,rStride2,uvWidth,uvHeight,left,top,right,bottom);
-//    copyDataUV(data3,len3,v,pStride3,rStride3,uvWidth,uvHeight,left,top,right,bottom);
-}
-
-JNIEXPORT jstring JNICALL
-Java_com_hw_codecplayer_util_NativeUtil_stringFromJNI(
-        JNIEnv* env,
-        jobject /* this */) {
-    std::string hello = "Hello from C++";
-    return env->NewStringUTF(hello.c_str());
+    copyData(data1,len1,y,pStride1,rStride1,w);
+    copyData(data2,len2,u,pStride2,rStride2,uvWidth);
+    copyData(data3,len3,v,pStride3,rStride3,uvWidth);
 }

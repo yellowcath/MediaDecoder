@@ -158,5 +158,7 @@ public class GLFrameRenderer implements Renderer {
         mTargetSurface.requestRender();
     }
 
-
+    public void destroy(){
+        playDemo.release();
+    }
 }
