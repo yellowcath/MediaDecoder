@@ -15,6 +15,7 @@ import com.hw.codecplayer.domain.MediaData;
 import com.hw.codecplayer.domain.MediaFrame;
 import com.hw.codecplayer.util.CL;
 import com.hw.codecplayer.util.MediaFramePool;
+import com.hw.codecplayer.util.MediaUtil;
 import com.hw.codecplayer.util.RunnableThread;
 
 import javax.microedition.khronos.opengles.GL10;
@@ -25,7 +26,6 @@ import java.util.List;
 
 public class PlayActivity extends AppCompatActivity {
 
-    private MediaDecoder mMediaDecoder;
     private GLSurfaceView mPreviewView;
     private TextView mTextView;
 
@@ -91,10 +91,10 @@ public class PlayActivity extends AppCompatActivity {
         dataList.add(mediaData1);
 //        dataList.add(mediaData2);
 //        dataList.add(mediaData3);
-        MediaDecoder mediaDecoder = new MediaDecoder(dataList);
+        final MediaDecoder mediaDecoder = new MediaDecoder(dataList);
         mediaDecoder.setOnFrameDecodeListener(new OnFrameDecodeListener() {
             @Override
-            public void onFrameDecode(final Image frameImage, final long frameTimeUs, boolean end) {
+            public void onFrameDecode(final Image frameImage, int codecColorFormat,final long frameTimeUs, boolean end) {
                 if (mStartTime == 0) {
                     mStartTime = System.currentTimeMillis();
                 }
@@ -109,7 +109,7 @@ public class PlayActivity extends AppCompatActivity {
 //                    CL.i(imageStr+" \nuv:"+uvplaneStr);
                 }
                 if (!end) {
-                    offerImage(frameImage, frameTimeUs);
+                    offerImage(frameImage,codecColorFormat, frameTimeUs);
                 }
             }
 
@@ -126,8 +126,7 @@ public class PlayActivity extends AppCompatActivity {
             int w = currentMediaFormat.getInteger(MediaFormat.KEY_WIDTH);
             int h = currentMediaFormat.getInteger(MediaFormat.KEY_HEIGHT);
 
-            final GLFrameRenderer renderer = new GLFrameRenderer(mPreviewView, getResources().getDisplayMetrics(), mFramePool,
-                    currentMediaFormat.getInteger(MediaFormat.KEY_COLOR_FORMAT)) {
+            final GLFrameRenderer renderer = new GLFrameRenderer(mPreviewView, getResources().getDisplayMetrics(), mFramePool) {
 
                 @Override
                 public void onDrawFrame(GL10 gl) {
@@ -145,16 +144,17 @@ public class PlayActivity extends AppCompatActivity {
                 }
             };
             mPreviewView.setRenderer(renderer);
-            renderer.update(w, h);
+            boolean useUVBuffer = MediaUtil.useUVBuffer(currentMediaFormat.getInteger(MediaFormat.KEY_COLOR_FORMAT));
+            renderer.update(w, h,useUVBuffer);
         } catch (Exception e) {
             e.printStackTrace();
         }
         mediaDecoder.start();
     }
 
-    private void offerImage(Image image, long timeUs) {
+    private void offerImage(Image image,int codecColorFormat, long timeUs) {
         MediaFrame mediaFrame = mFramePool.getCachedObject();
-        mediaFrame = mediaFrame == null ? MediaFrame.createFromImage(image, timeUs) : MediaFrame.resetFromImage(image, timeUs, mediaFrame);
+        mediaFrame = mediaFrame == null ? MediaFrame.createFromImage(image,codecColorFormat, timeUs) : MediaFrame.resetFromImage(image,codecColorFormat, timeUs, mediaFrame);
         mFramePool.offer(mediaFrame);
     }
 //    private void offerImage(Image image, long timeUs) {

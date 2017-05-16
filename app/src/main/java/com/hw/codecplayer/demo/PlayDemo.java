@@ -61,7 +61,7 @@ public class PlayDemo {
             CL.i("sleep", "sleeptime:" + (showTimeMs - currentTimeMs) + "ms");
             SystemClock.sleep(showTimeMs - currentTimeMs);
         }
-        if (frameRenderer.useUVBuffer()) {
+        if (mediaFrame.useUVBuffer()) {
             transformAndUpdate420SP(mediaFrame);
         } else {
             transformAndUpdateYUV(mediaFrame);
@@ -108,7 +108,7 @@ public class PlayDemo {
         if (y == null || y.capacity() < ySize) {
             y = ByteBuffer.allocateDirect(ySize);
         }
-        if (frameRenderer.useUVBuffer()) {
+        if (mediaFrame.useUVBuffer()) {
             int uvSize = ySize / 2;
             if (uv == null || uv.capacity() < uvSize) {
                 uv = ByteBuffer.allocateDirect(uvSize);

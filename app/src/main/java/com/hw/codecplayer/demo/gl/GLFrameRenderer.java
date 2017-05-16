@@ -7,7 +7,6 @@ import android.util.DisplayMetrics;
 import com.hw.codecplayer.demo.PlayDemo;
 import com.hw.codecplayer.util.CL;
 import com.hw.codecplayer.util.MediaFramePool;
-import com.hw.codecplayer.util.MediaUtil;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -25,18 +24,11 @@ public class GLFrameRenderer implements Renderer {
     private ByteBuffer v;
     private ByteBuffer uv;
     private PlayDemo playDemo;
-    private boolean mUseUVBuffer;
-    public GLFrameRenderer(GLSurfaceView surface, DisplayMetrics dm, MediaFramePool pool, int codecColorFormat) {
+    public GLFrameRenderer(GLSurfaceView surface, DisplayMetrics dm, MediaFramePool pool) {
         mTargetSurface = surface;
         mScreenWidth = dm.widthPixels;
         mScreenHeight = dm.heightPixels;
-        mUseUVBuffer = MediaUtil.useUVBuffer(codecColorFormat);
         playDemo = new PlayDemo(this, pool);
-        CL.i("codecColorFormat:"+codecColorFormat+" mUseUVBuffer:"+mUseUVBuffer);
-    }
-
-    public boolean useUVBuffer() {
-        return mUseUVBuffer;
     }
 
     @Override
@@ -81,10 +73,10 @@ public class GLFrameRenderer implements Renderer {
      * this method will be called from native code, it happens when the video is about to play or
      * the video size changes.
      */
-    public void update(int w, int h) {
+    public void update(int w, int h,boolean useUVBuffer) {
         CL.d("INIT E");
         if (mProgram == null) {
-            initProgram(mUseUVBuffer);
+            initProgram(useUVBuffer);
         }
         if (w > 0 && h > 0) {
             // 调整比例
@@ -110,7 +102,7 @@ public class GLFrameRenderer implements Renderer {
                 int yarraySize = w * h;
                 synchronized (this) {
                     y = ByteBuffer.allocate(yarraySize);
-                    if (mUseUVBuffer) {
+                    if (useUVBuffer) {
                         uv = ByteBuffer.allocate(yarraySize / 2);
                     } else {
                         u = ByteBuffer.allocate(yarraySize / 4);

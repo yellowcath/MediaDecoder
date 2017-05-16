@@ -7,6 +7,6 @@ import android.media.Image;
  */
 
 public interface OnFrameDecodeListener {
-    void onFrameDecode(Image frameImage,long frameTimeUs,boolean end);
+    void onFrameDecode(Image frameImage,int codecColorFormat,long frameTimeUs,boolean end);
     void onDecodeError(Throwable t);
 }

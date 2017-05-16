@@ -3,6 +3,7 @@ package com.hw.codecplayer.domain;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.media.Image;
+import com.hw.codecplayer.util.MediaUtil;
 
 import java.nio.ByteBuffer;
 
@@ -27,8 +28,13 @@ public class MediaFrame {
     public int height;
     public Rect cropRect;
     public long timestampUs;
+    /**
+     * 从MediaCodec获取的颜色值，注意不是从Image里面获取的
+     * {@link android.media.MediaCodecInfo.CodecCapabilities}
+     */
+    public int codecColorFormat;
 
-    public static MediaFrame resetFromImage(Image image, long timestampUs, MediaFrame mediaFrame) {
+    public static MediaFrame resetFromImage(Image image,int codecColorFormat, long timestampUs, MediaFrame mediaFrame) {
         checkFormat(image);
         Image.Plane[] planes = image.getPlanes();
         mediaFrame.buffer1 = copyBuffer(mediaFrame.buffer1, planes[0].getBuffer());
@@ -47,6 +53,7 @@ public class MediaFrame {
         mediaFrame.height = image.getHeight();
         mediaFrame.cropRect = image.getCropRect();
         mediaFrame.timestampUs = timestampUs;
+        mediaFrame.codecColorFormat = codecColorFormat;
         return mediaFrame;
     }
 
@@ -61,14 +68,21 @@ public class MediaFrame {
         return dest;
     }
 
-    public static MediaFrame createFromImage(Image image, long timestampUs) {
+    public static MediaFrame createFromImage(Image image,int codecColorFormat, long timestampUs) {
         checkFormat(image);
-        return resetFromImage(image, timestampUs, new MediaFrame());
+        return resetFromImage(image, codecColorFormat,timestampUs, new MediaFrame());
     }
 
     private static void checkFormat(Image image) throws UnsupportedOperationException {
         if (image.getFormat() != ImageFormat.YUV_420_888) {
             throw new UnsupportedOperationException("only support ImageFormat.YUV_420_888");
         }
+    }
+
+    /**
+     * @return 为ture时，buffer2存放的是UV数据;为false时，buffer2存U，buffer3存V
+     */
+    public boolean useUVBuffer() {
+        return MediaUtil.useUVBuffer(codecColorFormat);
     }
 }

@@ -107,7 +107,7 @@ public class MediaDecoder implements IMediaDecoder, OnFrameDecodeListener {
     }
 
     @Override
-    public void onFrameDecode(Image frameImage, long frameTimeUs, boolean end) {
+    public void onFrameDecode(Image frameImage,int codecColorFormat, long frameTimeUs, boolean end) {
         if (!end) {
             if (mPreFrameTimestampUs == 0) {
                 mPreFrameTimestampUs = frameTimeUs;
@@ -117,7 +117,7 @@ public class MediaDecoder implements IMediaDecoder, OnFrameDecodeListener {
             mPreFrameTimestampUs = frameTimeUs;
             CL.i("onFrameDecode,timeAddMs" + timeAddUs / 1000 + " 总时长:" + mTotalTimestampUs / 1000 + "ms");
             if (mFrameDecodeListener != null) {
-                mFrameDecodeListener.onFrameDecode(frameImage, mTotalTimestampUs, false);
+                mFrameDecodeListener.onFrameDecode(frameImage,codecColorFormat, mTotalTimestampUs, false);
             }
         } else {
             mPreFrameTimestampUs = 0;
@@ -127,7 +127,7 @@ public class MediaDecoder implements IMediaDecoder, OnFrameDecodeListener {
             if (nextIndex==-1) {
                 CL.i("已经是最后一个片段，解码结束");
                 if (mFrameDecodeListener != null) {
-                    mFrameDecodeListener.onFrameDecode(null, 0, true);
+                    mFrameDecodeListener.onFrameDecode(null,0, 0, true);
                 }
                 return;
             }

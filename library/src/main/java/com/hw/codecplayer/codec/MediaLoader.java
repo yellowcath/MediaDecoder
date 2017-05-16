@@ -6,9 +6,9 @@ import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import com.hw.codecplayer.domain.MediaData;
-import com.hw.codecplayer.util.RunnableThread;
 import com.hw.codecplayer.util.CL;
 import com.hw.codecplayer.util.MediaUtil;
+import com.hw.codecplayer.util.RunnableThread;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -45,6 +45,8 @@ public class MediaLoader implements IMediaLoader {
     private int mFrameRate;
     private Mode mMode;
     private OnFrameDecodeListener mOnFrameDecodeListener;
+    private int mCodecColorFormat;
+    private MediaFormat mOutputFormat;
 
     public MediaLoader(MediaExtractor mediaExtractor, MediaData mediaData, RunnableThread seekThread, long seekAccuracyMs) {
         mHandlerThread = seekThread;
@@ -84,9 +86,14 @@ public class MediaLoader implements IMediaLoader {
         if (mMediaCodec == null) {
             throw new IllegalStateException("MediaCodec初始化失败");
         }
+        outputFormatChanged();
         mMode = Mode.SEEK;
     }
 
+    private void outputFormatChanged(){
+        mOutputFormat  = mMediaCodec.getOutputFormat();
+        mCodecColorFormat = mOutputFormat.getInteger(MediaFormat.KEY_COLOR_FORMAT);
+    }
     @Override
     public void seekAndDecode() {
         if (mSeekToTimeMs <= 0 || !mMediaData.shouldCut) {
@@ -167,6 +174,9 @@ public class MediaLoader implements IMediaLoader {
         long s = System.currentTimeMillis();
         MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
         int outputBufferId = codec.dequeueOutputBuffer(info, TIME_OUT);
+        if(outputBufferId == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED){
+            outputFormatChanged();
+        }
         if (outputBufferId < 0) {
             return false;
         }
@@ -175,14 +185,14 @@ public class MediaLoader implements IMediaLoader {
         if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) == MediaCodec.BUFFER_FLAG_END_OF_STREAM) {
             CL.i("已到视频尾，解码完毕");
             if (mOnFrameDecodeListener != null) {
-                mOnFrameDecodeListener.onFrameDecode(null, 0, true);
+                mOnFrameDecodeListener.onFrameDecode(null, 0,0, true);
             }
             return true;
         }
         if (mMode == Mode.DECODE) {
             Image outputImage = mMediaCodec.getOutputImage(outputBufferId);
             if (mOnFrameDecodeListener != null && info.presentationTimeUs >= mMediaData.startTimeMs * 1000) {
-                mOnFrameDecodeListener.onFrameDecode(outputImage, info.presentationTimeUs, false);
+                mOnFrameDecodeListener.onFrameDecode(outputImage,mCodecColorFormat, info.presentationTimeUs, false);
             }
         } else {
             mMediaCodec.getOutputBuffer(outputBufferId);
