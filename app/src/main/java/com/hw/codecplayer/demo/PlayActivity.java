@@ -75,7 +75,7 @@ public class PlayActivity extends AppCompatActivity {
         File videoFile3 = new File(appContext.getCacheDir(), "3.mp4");
 
         try {
-            AssetsUtil.copyAssetsFileTo(appContext, "GOPR1996.MP4", videoFile1.getAbsoluteFile());
+            AssetsUtil.copyAssetsFileTo(appContext, "1.mp4", videoFile1.getAbsoluteFile());
 //            AssetsUtil.copyAssetsFileTo(appContext, "GOPR2002.MP4", videoFile2.getAbsoluteFile());
 //            AssetsUtil.copyAssetsFileTo(appContext, "GOPR2019.MP4", videoFile3.getAbsoluteFile());
 

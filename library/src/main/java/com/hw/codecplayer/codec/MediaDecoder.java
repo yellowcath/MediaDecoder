@@ -152,14 +152,20 @@ public class MediaDecoder implements IMediaDecoder, OnFrameDecodeListener {
             mCurIndex = nextIndex;
             mCurData = mDataList.get(mCurIndex);
             mCurLoader.setOnFrameDecodeListener(this);
+
+            RunnableThread tempThread = mCurThread;
+            mCurThread = mNextThread;
+            mNextThread = tempThread;
             //如果有再下一个片段，继续预加载
             nextIndex = getNextIndex(mCurIndex);
             if (nextIndex!=-1) {
                 CL.i("预加载下一个片段");
-                preLoad(mDataList.get(nextIndex), mCurThread);
+//                mCurThread.quit();
+//                mCurThread = new RunnableThread("RunnableThreadNew");
+//                mCurThread.start();
+                preLoad(mDataList.get(nextIndex), mNextThread);
             }
             //启动
-            mCurThread = mNextThread;
             mCurLoader.start();
         }
     }
