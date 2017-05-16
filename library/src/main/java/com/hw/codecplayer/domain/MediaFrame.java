@@ -3,9 +3,7 @@ package com.hw.codecplayer.domain;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.media.Image;
-import com.hw.codecplayer.util.CL;
 
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 /**

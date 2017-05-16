@@ -63,6 +63,6 @@ public class MediaLoaderTest {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        SystemClock.sleep(100000);
+        SystemClock.sleep(1000000);
     }
 }

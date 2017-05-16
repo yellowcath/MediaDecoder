@@ -58,7 +58,7 @@ public class MediaLoader implements IMediaLoader {
     }
 
     @Override
-    public void prepare() throws IOException {
+    public void prepare() throws IOException, IllegalStateException {
         //初始化Extractor
         CL.i("初始化Extractor+");
         mMediaExtractor.setDataSource(mMediaData.mediaPath);
@@ -72,10 +72,18 @@ public class MediaLoader implements IMediaLoader {
         mFrameRate = trackFormat.containsKey(MediaFormat.KEY_FRAME_RATE) ?
                 trackFormat.getInteger(MediaFormat.KEY_FRAME_RATE) : DEFAULT_FRAME_RATE;
 
-        mMediaCodec = MediaCodec.createDecoderByType(mime);
         trackFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
-                MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar);
-        mMediaCodec.configure(trackFormat, null, null, 0);
+                MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
+        try {
+            mMediaCodec = MediaCodec.createDecoderByType(mime);
+            mMediaCodec.configure(trackFormat, null, null, 0);
+        } catch (MediaCodec.CodecException e) {
+            CL.e(e);
+            mMediaCodec = MediaUtil.configDecoder(trackFormat);
+        }
+        if (mMediaCodec == null) {
+            throw new IllegalStateException("MediaCodec初始化失败");
+        }
         mMode = Mode.SEEK;
     }
 
@@ -156,13 +164,14 @@ public class MediaLoader implements IMediaLoader {
     }
 
     private boolean processOutput(MediaCodec codec) {
+        long s = System.currentTimeMillis();
         MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
         int outputBufferId = codec.dequeueOutputBuffer(info, TIME_OUT);
         if (outputBufferId < 0) {
             return false;
         }
         mOutputFrameCount++;
-        CL.i("Mode:" + mMode + "输出第" + mOutputFrameCount + "帧,size:" + info.size + " presentationTimeUs:" + info.presentationTimeUs + " flag:" + info.flags);
+//        CL.i("Mode:" + mMode + "输出第" + mOutputFrameCount + "帧,size:" + info.size + " presentationTimeUs:" + info.presentationTimeUs + " flag:" + info.flags);
         if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) == MediaCodec.BUFFER_FLAG_END_OF_STREAM) {
             CL.i("已到视频尾，解码完毕");
             if (mOnFrameDecodeListener != null) {
@@ -179,6 +188,8 @@ public class MediaLoader implements IMediaLoader {
             mMediaCodec.getOutputBuffer(outputBufferId);
         }
         mMediaCodec.releaseOutputBuffer(outputBufferId, false);
+        long e = System.currentTimeMillis();
+        CL.i("processOutput:" + (e - s) + "ms");
         return false;
     }
 
@@ -211,6 +222,8 @@ public class MediaLoader implements IMediaLoader {
                         seekAndDecode();
                     }
                 } catch (IOException e) {
+                    mThrowable = e;
+                } catch (IllegalStateException e) {
                     mThrowable = e;
                 }
             }
@@ -245,8 +258,7 @@ public class MediaLoader implements IMediaLoader {
 
     @Override
     public MediaFormat getCurrentMediaFormat() {
-        int videoTrackIndex = MediaUtil.getVideoTrackIndex(mMediaExtractor);
-        return mMediaExtractor.getTrackFormat(videoTrackIndex);
+        return mMediaCodec.getOutputFormat();
     }
 
     enum Mode {

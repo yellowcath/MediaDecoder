@@ -6,18 +6,16 @@ import android.media.MediaFormat;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.DisplayMetrics;
 import android.widget.TextView;
 import com.hw.codecplayer.codec.MediaDecoder;
 import com.hw.codecplayer.codec.OnFrameDecodeListener;
 import com.hw.codecplayer.demo.gl.GLFrameRenderer;
-import com.hw.codecplayer.demo.gl.ISimplePlayer;
 import com.hw.codecplayer.demo.util.AssetsUtil;
 import com.hw.codecplayer.domain.MediaData;
 import com.hw.codecplayer.domain.MediaFrame;
+import com.hw.codecplayer.util.CL;
 import com.hw.codecplayer.util.MediaFramePool;
 import com.hw.codecplayer.util.RunnableThread;
-import com.hw.codecplayer.util.CL;
 
 import javax.microedition.khronos.opengles.GL10;
 import java.io.File;
@@ -44,34 +42,11 @@ public class PlayActivity extends AppCompatActivity {
         setContentView(R.layout.activity_play);
         mTextView = (TextView) findViewById(R.id.textview);
         mPreviewView = (GLSurfaceView) findViewById(R.id.previewview);
-        DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
         mPreviewView.setEGLContextClientVersion(2);
-        final GLFrameRenderer renderer = new GLFrameRenderer(new ISimplePlayer() {
-            @Override
-            public void onPlayStart() {
 
-            }
-
-            @Override
-            public void onReceiveState(int state) {
-
-            }
-        }, mPreviewView, displayMetrics, mFramePool) {
-
-            @Override
-            public void onDrawFrame(GL10 gl) {
-                super.onDrawFrame(gl);
-                mFrameDrawCount++;
-                if (mStartDrawTime == 0) {
-                    mStartDrawTime = System.currentTimeMillis();
-                }
-                showFrameRate();
-            }
-        };
-        mPreviewView.setRenderer(renderer);
         mSeekThread = new RunnableThread("123");
         mSeekThread.start();
-        initDecoder(renderer);
+        initDecoder();
     }
 
     private void showFrameRate() {
@@ -92,7 +67,7 @@ public class PlayActivity extends AppCompatActivity {
         mStartDrawTime = 0;
     }
 
-    private void initDecoder(GLFrameRenderer renderer) {
+    private void initDecoder() {
         CL.setLogEnable(true);
         Context appContext = getApplicationContext();
         File videoFile1 = new File(appContext.getCacheDir(), "1.mp4");
@@ -128,9 +103,10 @@ public class PlayActivity extends AppCompatActivity {
                     CL.i("总计耗时:" + time + "ms");
                 }
                 if(CL.isLogEnable()) {
-                    String imageStr = String.format("%dX%d,cropRect:%s,format:%d", frameImage.getWidth(), frameImage.getHeight(), frameImage.getCropRect().toShortString(), frameImage.getFormat());
-                    String uvplaneStr = String.format("pixelStride:%d,rowStride:%d", frameImage.getPlanes()[1].getPixelStride(), frameImage.getPlanes()[1].getRowStride());
-                    CL.i("onFrameDecode,frameTimeUs:" + frameTimeUs + " end:" + end+" \n"+imageStr+" \nuv:"+uvplaneStr);
+//                    String imageStr = String.format("%dX%d,cropRect:%s,format:%d", frameImage.getWidth(), frameImage.getHeight(), frameImage.getCropRect().toShortString(), frameImage.getFormat());
+//                    String uvplaneStr = String.format("pixelStride:%d,rowStride:%d", frameImage.getPlanes()[1].getPixelStride(), frameImage.getPlanes()[1].getRowStride());
+                    CL.i("onFrameDecode,frameTimeUs:" + frameTimeUs + " end:" + end);
+//                    CL.i(imageStr+" \nuv:"+uvplaneStr);
                 }
                 if (!end) {
                     offerImage(frameImage, frameTimeUs);
@@ -149,6 +125,21 @@ public class PlayActivity extends AppCompatActivity {
             MediaFormat currentMediaFormat = mediaDecoder.getCurrentMediaFormat();
             int w = currentMediaFormat.getInteger(MediaFormat.KEY_WIDTH);
             int h = currentMediaFormat.getInteger(MediaFormat.KEY_HEIGHT);
+
+            final GLFrameRenderer renderer = new GLFrameRenderer(mPreviewView, getResources().getDisplayMetrics(), mFramePool,
+                    currentMediaFormat.getInteger(MediaFormat.KEY_COLOR_FORMAT)) {
+
+                @Override
+                public void onDrawFrame(GL10 gl) {
+                    super.onDrawFrame(gl);
+                    mFrameDrawCount++;
+                    if (mStartDrawTime == 0) {
+                        mStartDrawTime = System.currentTimeMillis();
+                    }
+                    showFrameRate();
+                }
+            };
+            mPreviewView.setRenderer(renderer);
             renderer.update(w, h);
         } catch (Exception e) {
             e.printStackTrace();

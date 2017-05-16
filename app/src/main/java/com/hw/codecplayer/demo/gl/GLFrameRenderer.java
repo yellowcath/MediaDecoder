@@ -5,7 +5,9 @@ import android.opengl.GLSurfaceView;
 import android.opengl.GLSurfaceView.Renderer;
 import android.util.DisplayMetrics;
 import com.hw.codecplayer.demo.PlayDemo;
+import com.hw.codecplayer.util.CL;
 import com.hw.codecplayer.util.MediaFramePool;
+import com.hw.codecplayer.util.MediaUtil;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -14,39 +16,43 @@ import java.nio.ByteBuffer;
 
 public class GLFrameRenderer implements Renderer {
 
-    private ISimplePlayer mParentAct;
     private GLSurfaceView mTargetSurface;
-    private GLProgram prog;
+    private IGLProgram mProgram;
     private int mScreenWidth, mScreenHeight;
     private int mVideoWidth, mVideoHeight;
     private ByteBuffer y;
     private ByteBuffer u;
     private ByteBuffer v;
+    private ByteBuffer uv;
     private PlayDemo playDemo;
-
-    public GLFrameRenderer(ISimplePlayer callback, GLSurfaceView surface, DisplayMetrics dm, MediaFramePool pool) {
-        mParentAct = callback;
+    private boolean mUseUVBuffer;
+    public GLFrameRenderer(GLSurfaceView surface, DisplayMetrics dm, MediaFramePool pool, int codecColorFormat) {
         mTargetSurface = surface;
         mScreenWidth = dm.widthPixels;
         mScreenHeight = dm.heightPixels;
-        playDemo = new PlayDemo(this,pool);
-        prog = new GLProgram(surface.getContext().getApplicationContext(),0);
+        mUseUVBuffer = MediaUtil.useUVBuffer(codecColorFormat);
+        playDemo = new PlayDemo(this, pool);
+        CL.i("codecColorFormat:"+codecColorFormat+" mUseUVBuffer:"+mUseUVBuffer);
+    }
+
+    public boolean useUVBuffer() {
+        return mUseUVBuffer;
     }
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         playDemo.start();
 
-        Utils.LOGD("GLFrameRenderer :: onSurfaceCreated");
-        if (!prog.isProgramBuilt()) {
-            prog.buildProgram();
-            Utils.LOGD("GLFrameRenderer :: buildProgram done");
+        CL.d("GLFrameRenderer :: onSurfaceCreated");
+        if (!mProgram.isProgramBuilt()) {
+            mProgram.buildProgram();
+            CL.d("GLFrameRenderer :: buildProgram done");
         }
     }
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
-        Utils.LOGD("GLFrameRenderer :: onSurfaceChanged");
+        CL.d("GLFrameRenderer :: onSurfaceChanged");
         GLES20.glViewport(0, 0, width, height);
     }
 
@@ -56,12 +62,17 @@ public class GLFrameRenderer implements Renderer {
             if (y != null) {
                 // reset position, have to be done
                 y.position(0);
-                u.position(0);
-                v.position(0);
-                prog.buildTextures(y, u, v, mVideoWidth, mVideoHeight);
+                if (uv == null) {
+                    u.position(0);
+                    v.position(0);
+                    mProgram.buildTextures(y, u, v, mVideoWidth, mVideoHeight);
+                } else {
+                    uv.position(0);
+                    mProgram.buildTextures(y, uv, mVideoWidth, mVideoHeight);
+                }
                 GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
                 GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
-                prog.drawFrame();
+                mProgram.drawFrame();
             }
         }
     }
@@ -71,22 +82,25 @@ public class GLFrameRenderer implements Renderer {
      * the video size changes.
      */
     public void update(int w, int h) {
-        Utils.LOGD("INIT E");
+        CL.d("INIT E");
+        if (mProgram == null) {
+            initProgram(mUseUVBuffer);
+        }
         if (w > 0 && h > 0) {
             // 调整比例
             if (mScreenWidth > 0 && mScreenHeight > 0) {
                 float f1 = 1f * mScreenHeight / mScreenWidth;
                 float f2 = 1f * h / w;
                 if (f1 == f2) {
-                    prog.createBuffers(GLProgram.squareVertices);
+                    mProgram.createBuffers(GLProgram420sp.squareVertices);
                 } else if (f1 < f2) {
                     float widScale = f1 / f2;
-                    prog.createBuffers(new float[] { -widScale, -1.0f, widScale, -1.0f, -widScale, 1.0f, widScale,
-                            1.0f, });
+                    mProgram.createBuffers(new float[]{-widScale, -1.0f, widScale, -1.0f, -widScale, 1.0f, widScale,
+                            1.0f,});
                 } else {
                     float heightScale = f2 / f1;
-                    prog.createBuffers(new float[] { -1.0f, -heightScale, 1.0f, -heightScale, -1.0f, heightScale, 1.0f,
-                            heightScale, });
+                    mProgram.createBuffers(new float[]{-1.0f, -heightScale, 1.0f, -heightScale, -1.0f, heightScale, 1.0f,
+                            heightScale,});
                 }
             }
             // 初始化容器
@@ -94,30 +108,39 @@ public class GLFrameRenderer implements Renderer {
                 this.mVideoWidth = w;
                 this.mVideoHeight = h;
                 int yarraySize = w * h;
-                int uvarraySize = yarraySize / 4;
                 synchronized (this) {
                     y = ByteBuffer.allocate(yarraySize);
-                    u = ByteBuffer.allocate(uvarraySize);
-                    v = ByteBuffer.allocate(uvarraySize);
+                    if (mUseUVBuffer) {
+                        uv = ByteBuffer.allocate(yarraySize / 2);
+                    } else {
+                        u = ByteBuffer.allocate(yarraySize / 4);
+                        v = ByteBuffer.allocate(yarraySize / 4);
+                    }
                 }
             }
         }
+    }
 
-        mParentAct.onPlayStart();
-        Utils.LOGD("INIT X");
+    private void initProgram(boolean useUVBuffer) {
+        if (useUVBuffer) {
+            mProgram = new GLProgram420sp(mTargetSurface.getContext().getApplicationContext(), 0);
+        } else {
+            mProgram = new GLProgramYUV(mTargetSurface.getContext().getApplicationContext(), 0);
+        }
     }
 
     /**
      * this method will be called from native code, it's used for passing yuv data to me.
+     *
      * @param y
      * @param u
      * @param v
      */
     public void update(ByteBuffer y, ByteBuffer u, ByteBuffer v) {
-        if(this.y ==null){
+        if (this.y == null) {
             return;
         }
-        synchronized (this){
+        synchronized (this) {
             this.y.clear();
             this.u.clear();
             this.v.clear();
@@ -129,14 +152,19 @@ public class GLFrameRenderer implements Renderer {
         mTargetSurface.requestRender();
     }
 
-    /**
-     * this method will be called from native code, it's used for passing play state to activity.
-     */
-    public void updateState(int state) {
-        Utils.LOGD("updateState E = " + state);
-        if (mParentAct != null) {
-            mParentAct.onReceiveState(state);
+    public void update(ByteBuffer y, ByteBuffer uv) {
+        if (this.y == null) {
+            return;
         }
-        Utils.LOGD("updateState X");
+        synchronized (this) {
+            this.y.clear();
+            this.uv.clear();
+            this.y.put(y);
+            this.uv.put(uv);
+        }
+        // request to render
+        mTargetSurface.requestRender();
     }
+
+
 }

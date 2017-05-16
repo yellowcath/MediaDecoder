@@ -21,6 +21,7 @@ public class PlayDemo {
     private ByteBuffer y;
     private ByteBuffer u;
     private ByteBuffer v;
+    private ByteBuffer uv;
 
     public PlayDemo(GLFrameRenderer renderer, MediaFramePool pool) {
         frameRenderer = renderer;
@@ -60,7 +61,25 @@ public class PlayDemo {
             CL.i("sleep", "sleeptime:" + (showTimeMs - currentTimeMs) + "ms");
             SystemClock.sleep(showTimeMs - currentTimeMs);
         }
+        if (frameRenderer.useUVBuffer()) {
+            transformAndUpdate420SP(mediaFrame);
+        } else {
+            transformAndUpdateYUV(mediaFrame);
+        }
+    }
 
+    private void transformAndUpdate420SP(MediaFrame mediaFrame) {
+        y.clear();
+        uv.clear();
+        y.put(mediaFrame.buffer1);
+        uv.put(mediaFrame.buffer3);
+        y.position(0);
+        uv.position(0);
+        mMediaFramePool.cacheObject(mediaFrame);
+        frameRenderer.update(y, uv);
+    }
+
+    private void transformAndUpdateYUV(MediaFrame mediaFrame) {
         int capacity1 = mediaFrame.buffer1.capacity();
         int capacity2 = mediaFrame.buffer2.capacity();
         int capacity3 = mediaFrame.buffer3.capacity();
@@ -73,11 +92,11 @@ public class PlayDemo {
                 capacity1, capacity2, capacity3,
                 mediaFrame.pixelStride1, mediaFrame.pixelStride2, mediaFrame.pixelStride3,
                 mediaFrame.rowStride1, mediaFrame.rowStride2, mediaFrame.rowStride3,
-                mediaFrame.width,mediaFrame.height,
-                mediaFrame.cropRect.left,mediaFrame.cropRect.top,mediaFrame.cropRect.right,mediaFrame.cropRect.bottom,
+                mediaFrame.width, mediaFrame.height,
+                mediaFrame.cropRect.left, mediaFrame.cropRect.top, mediaFrame.cropRect.right, mediaFrame.cropRect.bottom,
                 y, u, v);
         long e = System.currentTimeMillis();
-        if(CL.isLogEnable()) {
+        if (CL.isLogEnable()) {
             CL.i(String.format("planesToYUV,%dX%d,takes %dms", mediaFrame.width, mediaFrame.height, e - s));
         }
         mMediaFramePool.cacheObject(mediaFrame);
@@ -85,16 +104,23 @@ public class PlayDemo {
     }
 
     private void checkInit(MediaFrame mediaFrame) {
-        int ySize = mediaFrame.cropRect.width()*mediaFrame.cropRect.height();
+        int ySize = mediaFrame.width * mediaFrame.height;
         if (y == null || y.capacity() < ySize) {
             y = ByteBuffer.allocateDirect(ySize);
         }
-        int uvSize = ySize / 4;
-        if (u == null || u.capacity() < uvSize) {
-            u = ByteBuffer.allocateDirect(uvSize);
-        }
-        if (v == null || v.capacity() < uvSize) {
-            v = ByteBuffer.allocateDirect(uvSize);
+        if (frameRenderer.useUVBuffer()) {
+            int uvSize = ySize / 2;
+            if (uv == null || uv.capacity() < uvSize) {
+                uv = ByteBuffer.allocateDirect(uvSize);
+            }
+        } else {
+            int uvSize = ySize / 4;
+            if (u == null || u.capacity() < uvSize) {
+                u = ByteBuffer.allocateDirect(uvSize);
+            }
+            if (v == null || v.capacity() < uvSize) {
+                v = ByteBuffer.allocateDirect(uvSize);
+            }
         }
     }
 }

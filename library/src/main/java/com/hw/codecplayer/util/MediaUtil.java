@@ -1,7 +1,12 @@
 package com.hw.codecplayer.util;
 
+import android.media.MediaCodec;
+import android.media.MediaCodecInfo;
+import android.media.MediaCodecList;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+
+import java.io.IOException;
 
 /**
  * Created by huangwei on 2017/5/12.
@@ -18,5 +23,70 @@ public class MediaUtil {
             }
         }
         return -1;
+    }
+
+    public static boolean useUVBuffer(int colorFormat) {
+        if (colorFormat == MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar
+                || colorFormat == MediaCodecInfo.CodecCapabilities.COLOR_QCOM_FormatYUV420SemiPlanar
+                || colorFormat == MediaCodecInfo.CodecCapabilities.COLOR_QCOM_FormatYUV420SemiPlanar+4) {
+            return true;
+        }
+        return false;
+    }
+
+    public static MediaCodec configDecoder(MediaFormat format) {
+        if (format == null) {
+            return null;
+        }
+        MediaCodec codec;
+        String mime = format.getString(MediaFormat.KEY_MIME);
+        MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+        MediaCodecInfo[] infos = list.getCodecInfos();
+
+        for (MediaCodecInfo info : infos) {
+
+            MediaCodecInfo.CodecCapabilities capabilities;
+            boolean formatSupported;
+
+            // does codec support this mime type
+            try {
+                capabilities = info.getCapabilitiesForType(mime);
+            } catch (IllegalArgumentException ignored) {
+                continue;
+            }
+
+            // does codec support his video format
+            try {
+                formatSupported = capabilities.isFormatSupported(format);
+            } catch (IllegalArgumentException ignored) {
+                continue;
+            }
+
+            // can we configure it successfully
+            if (formatSupported) {
+                // try decoder
+                try {
+                    codec = MediaCodec.createByCodecName(info.getName());
+                } catch (IOException e) {
+                    continue;
+                }
+                try {
+                    codec.configure(format, null, null, 0);
+                } catch (IllegalArgumentException ignored) {
+                    // configure() failed
+                    codec.release();
+                    continue;
+                } catch (IllegalStateException ignored) {
+                    // configure() failed
+                    codec.release();
+                    continue;
+                }
+                // configure() successful
+                return codec;
+            }
+        } // end of for loop
+
+        // no decoder found
+        return null;
     }
 }

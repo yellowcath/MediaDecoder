@@ -9,7 +9,7 @@ import java.io.IOException;
  */
 
 public interface IMediaLoader {
-    public void prepare() throws IOException;
+    public void prepare() throws IOException,IllegalStateException;
 
     public void seekAndDecode();
 
