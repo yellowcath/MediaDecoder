@@ -2,7 +2,6 @@ package com.hw.codecplayer.codec;
 
 import android.media.Image;
 import android.media.MediaCodec;
-import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import com.hw.codecplayer.domain.MediaData;
@@ -74,10 +73,11 @@ public class MediaLoader implements IMediaLoader {
         mFrameRate = trackFormat.containsKey(MediaFormat.KEY_FRAME_RATE) ?
                 trackFormat.getInteger(MediaFormat.KEY_FRAME_RATE) : DEFAULT_FRAME_RATE;
 
-        trackFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
-                MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
         try {
             mMediaCodec = MediaCodec.createDecoderByType(mime);
+            int colorFormat = MediaUtil.getSupportColorForamt(mMediaCodec,mime);
+            CL.i("getSupportColorForamt:"+colorFormat);
+            trackFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,colorFormat);
             mMediaCodec.configure(trackFormat, null, null, 0);
         } catch (MediaCodec.CodecException e) {
             CL.e(e);

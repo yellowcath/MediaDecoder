@@ -107,4 +107,19 @@ public class MediaUtil {
         }
         return true;
     }
+
+    public static int getSupportColorForamt(MediaCodec mediaCodec,String mime) {
+        try {
+            MediaCodecInfo.CodecCapabilities capabilitiesForType = mediaCodec.getCodecInfo().getCapabilitiesForType(mime);
+            int[] colorFormats = capabilitiesForType.colorFormats;
+            for(int i=0;i<colorFormats.length;i++){
+                if(colorFormats[i] == MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar){
+                    return colorFormats[i];
+                }
+            }
+        }catch (Exception e){
+            CL.e(e);
+        }
+        return MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
+    }
 }

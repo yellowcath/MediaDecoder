@@ -24,6 +24,8 @@ public class GLFrameRenderer implements Renderer {
     private ByteBuffer v;
     private ByteBuffer uv;
     private PlayDemo playDemo;
+    private boolean mUseUVBUffer;
+
     public GLFrameRenderer(GLSurfaceView surface, DisplayMetrics dm, MediaFramePool pool) {
         mTargetSurface = surface;
         mScreenWidth = dm.widthPixels;
@@ -31,15 +33,18 @@ public class GLFrameRenderer implements Renderer {
         playDemo = new PlayDemo(this, pool);
     }
 
-    @Override
-    public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-        playDemo.start();
-
-        CL.d("GLFrameRenderer :: onSurfaceCreated");
-        if (!mProgram.isProgramBuilt()) {
+    private void checkInitProgram() {
+        if (mProgram != null && !mProgram.isProgramBuilt()) {
             mProgram.buildProgram();
             CL.d("GLFrameRenderer :: buildProgram done");
         }
+    }
+
+    @Override
+    public void onSurfaceCreated(GL10 gl, EGLConfig config) {
+        playDemo.start();
+        CL.d("GLFrameRenderer :: onSurfaceCreated");
+        checkInitProgram();
     }
 
     @Override
@@ -50,6 +55,7 @@ public class GLFrameRenderer implements Renderer {
 
     @Override
     public void onDrawFrame(GL10 gl) {
+        checkInitProgram();
         synchronized (this) {
             if (y != null) {
                 // reset position, have to be done
@@ -73,44 +79,39 @@ public class GLFrameRenderer implements Renderer {
      * this method will be called from native code, it happens when the video is about to play or
      * the video size changes.
      */
-    public void update(int w, int h,boolean useUVBuffer) {
-        CL.d("INIT E");
-        if (mProgram == null) {
-            initProgram(useUVBuffer);
-        }
-        if (w > 0 && h > 0) {
-            // 调整比例
-            if (mScreenWidth > 0 && mScreenHeight > 0) {
-                float f1 = 1f * mScreenHeight / mScreenWidth;
-                float f2 = 1f * h / w;
-                if (f1 == f2) {
-                    mProgram.createBuffers(GLProgram420sp.squareVertices);
-                } else if (f1 < f2) {
-                    float widScale = f1 / f2;
-                    mProgram.createBuffers(new float[]{-widScale, -1.0f, widScale, -1.0f, -widScale, 1.0f, widScale,
-                            1.0f,});
-                } else {
-                    float heightScale = f2 / f1;
-                    mProgram.createBuffers(new float[]{-1.0f, -heightScale, 1.0f, -heightScale, -1.0f, heightScale, 1.0f,
-                            heightScale,});
-                }
-            }
-            // 初始化容器
-            if (w != mVideoWidth && h != mVideoHeight) {
-                this.mVideoWidth = w;
-                this.mVideoHeight = h;
-                int yarraySize = w * h;
-                synchronized (this) {
-                    y = ByteBuffer.allocate(yarraySize);
-                    if (useUVBuffer) {
-                        uv = ByteBuffer.allocate(yarraySize / 2);
-                    } else {
-                        u = ByteBuffer.allocate(yarraySize / 4);
-                        v = ByteBuffer.allocate(yarraySize / 4);
-                    }
-                }
+    private void update(int w, int h, boolean useUVBuffer) {
+        CL.d(w + "X" + h + " useUVBuffer:" + useUVBuffer);
+        initProgram(useUVBuffer);
+        // 调整比例
+        if (mScreenWidth > 0 && mScreenHeight > 0) {
+            float f1 = 1f * mScreenHeight / mScreenWidth;
+            float f2 = 1f * h / w;
+            if (f1 == f2) {
+                mProgram.createBuffers(GLProgram420sp.squareVertices);
+            } else if (f1 < f2) {
+                float widScale = f1 / f2;
+                mProgram.createBuffers(new float[]{-widScale, -1.0f, widScale, -1.0f, -widScale, 1.0f, widScale,
+                        1.0f,});
+            } else {
+                float heightScale = f2 / f1;
+                mProgram.createBuffers(new float[]{-1.0f, -heightScale, 1.0f, -heightScale, -1.0f, heightScale, 1.0f,
+                        heightScale,});
             }
         }
+        // 初始化容器
+        this.mVideoWidth = w;
+        this.mVideoHeight = h;
+        int yarraySize = w * h;
+        synchronized (this) {
+            y = ByteBuffer.allocate(yarraySize);
+            if (useUVBuffer) {
+                uv = ByteBuffer.allocate(yarraySize / 2);
+            } else {
+                u = ByteBuffer.allocate(yarraySize / 4);
+                v = ByteBuffer.allocate(yarraySize / 4);
+            }
+        }
+        mUseUVBUffer = useUVBuffer;
     }
 
     private void initProgram(boolean useUVBuffer) {
@@ -128,23 +129,29 @@ public class GLFrameRenderer implements Renderer {
      * @param u
      * @param v
      */
-    public void update(ByteBuffer y, ByteBuffer u, ByteBuffer v) {
+    public void update(ByteBuffer y, ByteBuffer u, ByteBuffer v, int w, int h, boolean useUVBuffer) {
+        checkUpdateSize(w, h, useUVBuffer);
         if (this.y == null) {
             return;
         }
+//        CL.e(y.capacity() + " " + this.y.capacity());
         synchronized (this) {
             this.y.clear();
             this.u.clear();
             this.v.clear();
+            y.limit(this.y.capacity());//不加这个在三星J7上有crash的问题。。。
             this.y.put(y);
+            u.limit(this.u.capacity());
             this.u.put(u);
+            v.limit(this.v.capacity());
             this.v.put(v);
         }
         // request to render
         mTargetSurface.requestRender();
     }
 
-    public void update(ByteBuffer y, ByteBuffer uv) {
+    public void update(ByteBuffer y, ByteBuffer uv, int w, int h, boolean useUVBuffer) {
+        checkUpdateSize(w, h, useUVBuffer);
         if (this.y == null) {
             return;
         }
@@ -158,7 +165,13 @@ public class GLFrameRenderer implements Renderer {
         mTargetSurface.requestRender();
     }
 
-    public void destroy(){
+    private void checkUpdateSize(int w, int h, boolean useUVBuffer) {
+        if(w!=mVideoWidth || h !=mVideoHeight || useUVBuffer!=mUseUVBUffer){
+            update(w, h, useUVBuffer);
+        }
+    }
+
+    public void destroy() {
         playDemo.release();
     }
 }

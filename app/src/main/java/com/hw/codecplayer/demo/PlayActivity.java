@@ -2,7 +2,6 @@ package com.hw.codecplayer.demo;
 
 import android.content.Context;
 import android.media.Image;
-import android.media.MediaFormat;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -15,7 +14,6 @@ import com.hw.codecplayer.domain.MediaData;
 import com.hw.codecplayer.domain.MediaFrame;
 import com.hw.codecplayer.util.CL;
 import com.hw.codecplayer.util.MediaFramePool;
-import com.hw.codecplayer.util.MediaUtil;
 import com.hw.codecplayer.util.RunnableThread;
 
 import javax.microedition.khronos.opengles.GL10;
@@ -47,6 +45,26 @@ public class PlayActivity extends AppCompatActivity {
 
         mSeekThread = new RunnableThread("123");
         mSeekThread.start();
+
+        mFrameRenderer = new GLFrameRenderer(mPreviewView, getResources().getDisplayMetrics(), mFramePool) {
+
+            @Override
+            public void onDrawFrame(GL10 gl) {
+                super.onDrawFrame(gl);
+                mFrameDrawCount++;
+                if (mStartDrawTime == 0) {
+                    mStartDrawTime = System.currentTimeMillis();
+                }
+                if (mFrameDrawCount > 30) {
+                    mFrameDrawCount = 0;
+                    mStartDrawTime = System.currentTimeMillis();
+                } else {
+                    showFrameRate();
+                }
+            }
+        };
+        mPreviewView.setRenderer(mFrameRenderer);
+
         initDecoder();
     }
 
@@ -78,19 +96,19 @@ public class PlayActivity extends AppCompatActivity {
         try {
             AssetsUtil.copyAssetsFileTo(appContext, "GOPR1996.MP4", videoFile1.getAbsoluteFile());
 //            AssetsUtil.copyAssetsFileTo(appContext, "GOPR2002.MP4", videoFile2.getAbsoluteFile());
-//            AssetsUtil.copyAssetsFileTo(appContext, "GOPR2019.MP4", videoFile3.getAbsoluteFile());
+            AssetsUtil.copyAssetsFileTo(appContext, "GOPR2019.MP4", videoFile2.getAbsoluteFile());
 
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         MediaData mediaData1 = new MediaData(videoFile1.getAbsolutePath(), 8000, 12000);
-//        MediaData mediaData2 = new MediaData(videoFile2.getAbsolutePath(), 8000, 12000);
+        MediaData mediaData2 = new MediaData(videoFile2.getAbsolutePath(), 8000, 12000);
 //        MediaData mediaData3 = new MediaData(videoFile3.getAbsolutePath(), 20000, 24000);
 
         List<MediaData> dataList = new ArrayList<>();
         dataList.add(mediaData1);
-//        dataList.add(mediaData2);
+        dataList.add(mediaData2);
 //        dataList.add(mediaData3);
         final MediaDecoder mediaDecoder = new MediaDecoder(dataList);
         mediaDecoder.setOnFrameDecodeListener(new OnFrameDecodeListener() {
@@ -112,6 +130,8 @@ public class PlayActivity extends AppCompatActivity {
                 if (!end) {
                     offerImage(frameImage, codecColorFormat, frameTimeUs);
                 }
+                CL.i("currentMediaFormat:"+mediaDecoder.getCurrentMediaFormat().toString());
+
             }
 
             @Override
@@ -123,30 +143,6 @@ public class PlayActivity extends AppCompatActivity {
         try {
             mediaDecoder.setLoop(true);
             mediaDecoder.prepare();
-            MediaFormat currentMediaFormat = mediaDecoder.getCurrentMediaFormat();
-            int w = currentMediaFormat.getInteger(MediaFormat.KEY_WIDTH);
-            int h = currentMediaFormat.getInteger(MediaFormat.KEY_HEIGHT);
-
-            mFrameRenderer = new GLFrameRenderer(mPreviewView, getResources().getDisplayMetrics(), mFramePool) {
-
-                @Override
-                public void onDrawFrame(GL10 gl) {
-                    super.onDrawFrame(gl);
-                    mFrameDrawCount++;
-                    if (mStartDrawTime == 0) {
-                        mStartDrawTime = System.currentTimeMillis();
-                    }
-                    if (mFrameDrawCount > 30) {
-                        mFrameDrawCount = 0;
-                        mStartDrawTime = System.currentTimeMillis();
-                    } else {
-                        showFrameRate();
-                    }
-                }
-            };
-            mPreviewView.setRenderer(mFrameRenderer);
-            boolean useUVBuffer = MediaUtil.useUVBuffer(currentMediaFormat.getInteger(MediaFormat.KEY_COLOR_FORMAT));
-            mFrameRenderer.update(w, h, useUVBuffer);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -154,6 +150,7 @@ public class PlayActivity extends AppCompatActivity {
     }
 
     private void offerImage(Image image, int codecColorFormat, long timeUs) {
+
         MediaFrame mediaFrame = mFramePool.getCachedObject();
         mediaFrame = mediaFrame == null ? MediaFrame.createFromImage(image, codecColorFormat, timeUs) : MediaFrame.resetFromImage(image, codecColorFormat, timeUs, mediaFrame);
         mFramePool.offer(mediaFrame);

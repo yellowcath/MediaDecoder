@@ -57,10 +57,10 @@ public class PlayDemo {
         }
         checkInit(mediaFrame);
         long currentTimeMs = System.currentTimeMillis();
-        CL.i("sleep", "frameTimeMs:" + mediaFrame.timestampUs / 1000 + "ms");
+        CL.i("frameTimeMs:" + mediaFrame.timestampUs / 1000 + "ms");
         long showTimeMs = mStartTimeMs + mediaFrame.timestampUs / 1000;
         if (showTimeMs > currentTimeMs) {
-            CL.i("sleep", "sleeptime:" + (showTimeMs - currentTimeMs) + "ms");
+            CL.i("sleeptime:" + (showTimeMs - currentTimeMs) + "ms");
             SystemClock.sleep(showTimeMs - currentTimeMs);
         }
         if (mediaFrame.useUVBuffer()) {
@@ -82,7 +82,7 @@ public class PlayDemo {
         y.position(0);
         uv.position(0);
         mMediaFramePool.cacheObject(mediaFrame);
-        frameRenderer.update(y, uv);
+        frameRenderer.update(y, uv,mediaFrame.width,mediaFrame.height,mediaFrame.useUVBuffer());
     }
     /**
      * YUV420p的情况直接拷贝
@@ -99,7 +99,7 @@ public class PlayDemo {
         u.position(0);
         v.position(0);
         mMediaFramePool.cacheObject(mediaFrame);
-        frameRenderer.update(y, u,v);
+        frameRenderer.update(y, u,v,mediaFrame.width,mediaFrame.height,mediaFrame.useUVBuffer());
     }
     /**
      * 其它情况根据Image的参数转换
@@ -110,6 +110,7 @@ public class PlayDemo {
             transformAndUpdate420P(mediaFrame);
             return;
         }
+        CL.i("transformAndUpdateYUV");
         int capacity1 = mediaFrame.buffer1.capacity();
         int capacity2 = mediaFrame.buffer2.capacity();
         int capacity3 = mediaFrame.buffer3.capacity();
@@ -129,7 +130,7 @@ public class PlayDemo {
             CL.i(String.format("planesToYUV,%dX%d,takes %dms", mediaFrame.width, mediaFrame.height, e - s));
         }
         mMediaFramePool.cacheObject(mediaFrame);
-        frameRenderer.update(y, u, v);
+        frameRenderer.update(y, u, v,mediaFrame.width,mediaFrame.height,mediaFrame.useUVBuffer());
     }
 
     private void checkInit(MediaFrame mediaFrame) {

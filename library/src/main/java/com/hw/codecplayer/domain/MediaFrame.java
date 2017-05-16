@@ -62,7 +62,7 @@ public class MediaFrame {
 
     private static ByteBuffer copyBuffer(ByteBuffer dest, ByteBuffer src) {
         int size = src.limit();
-        if (dest == null || dest.capacity() < size) {
+        if (dest == null || dest.capacity() != size) {
             dest = ByteBuffer.allocateDirect(size);
         }
         dest.clear();
