@@ -75,9 +75,9 @@ public class MediaLoader implements IMediaLoader {
 
         try {
             mMediaCodec = MediaCodec.createDecoderByType(mime);
-            int colorFormat = MediaUtil.getSupportColorForamt(mMediaCodec,mime);
-            CL.i("getSupportColorForamt:"+colorFormat);
-            trackFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,colorFormat);
+            int colorFormat = MediaUtil.getSupportColorForamt(mMediaCodec, mime);
+            CL.i("getSupportColorForamt:" + colorFormat);
+            trackFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
             mMediaCodec.configure(trackFormat, null, null, 0);
         } catch (MediaCodec.CodecException e) {
             CL.e(e);
@@ -90,10 +90,11 @@ public class MediaLoader implements IMediaLoader {
         mMode = Mode.SEEK;
     }
 
-    private void outputFormatChanged(){
-        mOutputFormat  = mMediaCodec.getOutputFormat();
+    private void outputFormatChanged() {
+        mOutputFormat = mMediaCodec.getOutputFormat();
         mCodecColorFormat = mOutputFormat.getInteger(MediaFormat.KEY_COLOR_FORMAT);
     }
+
     @Override
     public void seekAndDecode() {
         if (mSeekToTimeMs <= 0 || !mMediaData.shouldCut) {
@@ -174,7 +175,7 @@ public class MediaLoader implements IMediaLoader {
         long s = System.currentTimeMillis();
         MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
         int outputBufferId = codec.dequeueOutputBuffer(info, TIME_OUT);
-        if(outputBufferId == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED){
+        if (outputBufferId == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
             outputFormatChanged();
         }
         if (outputBufferId < 0) {
@@ -185,14 +186,14 @@ public class MediaLoader implements IMediaLoader {
         if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) == MediaCodec.BUFFER_FLAG_END_OF_STREAM) {
             CL.i("已到视频尾，解码完毕");
             if (mOnFrameDecodeListener != null) {
-                mOnFrameDecodeListener.onFrameDecode(null, 0,0, true);
+                mOnFrameDecodeListener.onFrameDecode(null, 0, 0, true);
             }
             return true;
         }
         if (mMode == Mode.DECODE) {
             Image outputImage = mMediaCodec.getOutputImage(outputBufferId);
             if (mOnFrameDecodeListener != null && info.presentationTimeUs >= mMediaData.startTimeMs * 1000) {
-                mOnFrameDecodeListener.onFrameDecode(outputImage,mCodecColorFormat, info.presentationTimeUs, false);
+                mOnFrameDecodeListener.onFrameDecode(outputImage, mCodecColorFormat, info.presentationTimeUs, false);
             }
         } else {
             mMediaCodec.getOutputBuffer(outputBufferId);
@@ -267,8 +268,13 @@ public class MediaLoader implements IMediaLoader {
     }
 
     @Override
-    public MediaFormat getCurrentMediaFormat() {
+    public MediaFormat getCodecMediaFormat() {
         return mMediaCodec.getOutputFormat();
+    }
+
+    @Override
+    public MediaFormat getExtractorMediaFormat() {
+        return mMediaExtractor.getTrackFormat(MediaUtil.getVideoTrackIndex(mMediaExtractor));
     }
 
     enum Mode {

@@ -2,6 +2,7 @@ package com.hw.codecplayer.demo;
 
 import android.content.Context;
 import android.media.Image;
+import android.media.MediaFormat;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -33,10 +34,10 @@ public class PlayActivity extends AppCompatActivity {
     private List<MediaData> mDataList;
     private int mCodecColorFormat;
     private String mVideoSize;
+    private int mFrameRate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        CL.setLogEnable(true);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_play);
 
@@ -86,7 +87,9 @@ public class PlayActivity extends AppCompatActivity {
                 if (mVideoSize == null) {
                     mVideoSize = "";
                 }
-                mTextView.setText("fps:" + (int) frameRate + " \ncolorFormat:" + mCodecColorFormat
+                mTextView.setText("fps:" + (int) frameRate
+                        +"\n视频帧率:"+(mFrameRate==-1?"未知":mFrameRate)
+                        + " \ncolorFormat:" + mCodecColorFormat
                         + "\n" + mVideoSize);
             }
         });
@@ -100,7 +103,6 @@ public class PlayActivity extends AppCompatActivity {
     }
 
     private void initDecoder() {
-        CL.setLogEnable(true);
         Context appContext = getApplicationContext();
 //        File videoFile1 = new File(appContext.getCacheDir(), "1.mp4");
 //        File videoFile2 = new File(appContext.getCacheDir(), "2.mp4");
@@ -136,6 +138,9 @@ public class PlayActivity extends AppCompatActivity {
                 }
                 mVideoSize = frameImage.getWidth() + "X" + frameImage.getHeight();
                 mCodecColorFormat = codecColorFormat;
+                MediaFormat currentMediaFormat = mediaDecoder.getExtractorMediaFormat();
+                mFrameRate = currentMediaFormat.containsKey(MediaFormat.KEY_FRAME_RATE)?
+                        currentMediaFormat.getInteger(MediaFormat.KEY_FRAME_RATE):-1;
                 if (CL.isLogEnable()) {
 //                    String imageStr = String.format("%dX%d,cropRect:%s,format:%d", frameImage.getWidth(), frameImage.getHeight(), frameImage.getCropRect().toShortString(), frameImage.getFormat());
 //                    String uvplaneStr = String.format("pixelStride:%d,rowStride:%d", frameImage.getPlanes()[1].getPixelStride(), frameImage.getPlanes()[1].getRowStride());
@@ -145,7 +150,7 @@ public class PlayActivity extends AppCompatActivity {
                 if (!end) {
                     offerImage(frameImage, codecColorFormat, frameTimeUs);
                 }
-                CL.i("currentMediaFormat:" + mediaDecoder.getCurrentMediaFormat().toString());
+                CL.i("currentMediaFormat:" + mediaDecoder.getCodecMediaFormat().toString());
 
             }
 
@@ -165,7 +170,6 @@ public class PlayActivity extends AppCompatActivity {
     }
 
     private void offerImage(Image image, int codecColorFormat, long timeUs) {
-
         MediaFrame mediaFrame = mFramePool.getCachedObject();
         mediaFrame = mediaFrame == null ? MediaFrame.createFromImage(image, codecColorFormat, timeUs) : MediaFrame.resetFromImage(image, codecColorFormat, timeUs, mediaFrame);
         mFramePool.offer(mediaFrame);

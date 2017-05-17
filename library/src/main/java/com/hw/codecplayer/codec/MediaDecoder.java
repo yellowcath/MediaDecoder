@@ -102,8 +102,13 @@ public class MediaDecoder implements IMediaDecoder, OnFrameDecodeListener {
     }
 
     @Override
-    public MediaFormat getCurrentMediaFormat() {
-        return mCurLoader.getCurrentMediaFormat();
+    public MediaFormat getCodecMediaFormat() {
+        return mCurLoader.getCodecMediaFormat();
+    }
+
+    @Override
+    public MediaFormat getExtractorMediaFormat() {
+        return mCurLoader.getExtractorMediaFormat();
     }
 
     @Override

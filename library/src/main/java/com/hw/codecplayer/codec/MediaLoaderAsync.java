@@ -220,7 +220,7 @@ public class MediaLoaderAsync {
 //
 //    }
 //    @Override
-//    public MediaFormat getCurrentMediaFormat() {
+//    public MediaFormat getCodecMediaFormat() {
 //        int videoTrackIndex = MediaUtil.getVideoTrackIndex(mMediaExtractor);
 //        return mMediaExtractor.getTrackFormat(videoTrackIndex);
 //    }

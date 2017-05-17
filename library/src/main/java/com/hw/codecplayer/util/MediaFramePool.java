@@ -1,6 +1,5 @@
 package com.hw.codecplayer.util;
 
-import android.util.Log;
 import com.hw.codecplayer.domain.MediaFrame;
 
 import java.util.concurrent.LinkedBlockingQueue;
@@ -31,7 +30,7 @@ public class MediaFramePool {
 
     public void offer(MediaFrame mediaFrame){
         try {
-            CL.i("poll,size:" + availableQueue.size());
+            CL.i("offer,size:" + availableQueue.size());
             availableQueue.offer(mediaFrame,mTimeOutMs, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             CL.e(e);

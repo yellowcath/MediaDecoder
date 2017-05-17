@@ -27,5 +27,7 @@ public interface IMediaLoader {
 
     public void setOnFrameDecodeListener(OnFrameDecodeListener frameDecodeListener);
 
-    MediaFormat getCurrentMediaFormat();
+    MediaFormat getCodecMediaFormat();
+
+    MediaFormat getExtractorMediaFormat();
 }

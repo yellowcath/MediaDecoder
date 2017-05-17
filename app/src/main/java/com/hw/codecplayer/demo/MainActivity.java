@@ -52,7 +52,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
-        CL.setLogEnable(true);
+        CL.setLogEnable(false);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_layout);
 
