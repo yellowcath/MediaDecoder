@@ -1,5 +1,6 @@
 package com.hw.codecplayer.demo;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.media.Image;
 import android.media.MediaFormat;
@@ -35,6 +36,8 @@ public class PlayActivity extends AppCompatActivity {
     private int mCodecColorFormat;
     private String mVideoSize;
     private int mFrameRate;
+    private ProgressDialog mProgressDialog;
+    private MediaDecoder mediaDecoder;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,8 +77,14 @@ public class PlayActivity extends AppCompatActivity {
             }
         };
         mPreviewView.setRenderer(mFrameRenderer);
-
-        initDecoder();
+        mProgressDialog = ProgressDialog.show(this, "", "加载视频。。。");
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                initDecoder();
+                mProgressDialog.dismiss();
+            }
+        }).start();
     }
 
     private void showFrameRate() {
@@ -88,7 +97,7 @@ public class PlayActivity extends AppCompatActivity {
                     mVideoSize = "";
                 }
                 mTextView.setText("fps:" + (int) frameRate
-                        +"\n视频帧率:"+(mFrameRate==-1?"未知":mFrameRate)
+                        + "\n视频帧率:" + (mFrameRate == -1 ? "未知" : mFrameRate)
                         + " \ncolorFormat:" + mCodecColorFormat
                         + "\n" + mVideoSize);
             }
@@ -125,7 +134,7 @@ public class PlayActivity extends AppCompatActivity {
 //        dataList.add(mediaData1);
 //        dataList.add(mediaData2);
 ////        dataList.add(mediaData3);
-        final MediaDecoder mediaDecoder = new MediaDecoder(mDataList);
+        mediaDecoder = new MediaDecoder(mDataList);
         mediaDecoder.setOnFrameDecodeListener(new OnFrameDecodeListener() {
             @Override
             public void onFrameDecode(final Image frameImage, int codecColorFormat, final long frameTimeUs, boolean end) {
@@ -139,8 +148,8 @@ public class PlayActivity extends AppCompatActivity {
                 mVideoSize = frameImage.getWidth() + "X" + frameImage.getHeight();
                 mCodecColorFormat = codecColorFormat;
                 MediaFormat currentMediaFormat = mediaDecoder.getExtractorMediaFormat();
-                mFrameRate = currentMediaFormat.containsKey(MediaFormat.KEY_FRAME_RATE)?
-                        currentMediaFormat.getInteger(MediaFormat.KEY_FRAME_RATE):-1;
+                mFrameRate = currentMediaFormat.containsKey(MediaFormat.KEY_FRAME_RATE) ?
+                        currentMediaFormat.getInteger(MediaFormat.KEY_FRAME_RATE) : -1;
                 if (CL.isLogEnable()) {
 //                    String imageStr = String.format("%dX%d,cropRect:%s,format:%d", frameImage.getWidth(), frameImage.getHeight(), frameImage.getCropRect().toShortString(), frameImage.getFormat());
 //                    String uvplaneStr = String.format("pixelStride:%d,rowStride:%d", frameImage.getPlanes()[1].getPixelStride(), frameImage.getPlanes()[1].getRowStride());
@@ -178,6 +187,9 @@ public class PlayActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (mediaDecoder != null) {
+            mediaDecoder.release();
+        }
         if (mFrameRenderer != null) {
             mFrameRenderer.destroy();
         }

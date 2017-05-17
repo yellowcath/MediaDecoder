@@ -1,6 +1,9 @@
 package com.hw.codecplayer.demo;
 
+import android.Manifest;
+import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.media.MediaMetadataRetriever;
@@ -8,6 +11,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
@@ -45,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button mBtn3;
 
     private Button mPlayBtn;
+    private Button mDecodeBtn;
 
     private MediaData mMediaData1;
     private MediaData mMediaData2;
@@ -52,10 +58,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
-        CL.setLogEnable(false);
+        CL.setLogEnable(true);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_layout);
 
+        requestContactPermission();
         mImg1 = (ImageView) findViewById(R.id.img1);
         mImg2 = (ImageView) findViewById(R.id.img2);
         mImg3 = (ImageView) findViewById(R.id.img3);
@@ -73,11 +80,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mBtn3 = (Button) findViewById(R.id.btn3);
 
         mPlayBtn = (Button) findViewById(R.id.play);
+        mDecodeBtn = (Button) findViewById(R.id.decode);
 
         mBtn1.setOnClickListener(this);
         mBtn2.setOnClickListener(this);
         mBtn3.setOnClickListener(this);
         mPlayBtn.setOnClickListener(this);
+        mDecodeBtn.setOnClickListener(this);
 
         mSeekbar1.setOnSeekBarChangeListener(this);
         mSeekbar2.setOnSeekBarChangeListener(this);
@@ -87,6 +96,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != Activity.RESULT_OK) {
+            return;
+        }
         String videoPath = getPath(requestCode, resultCode, data);
         try {
             switch (requestCode) {
@@ -163,7 +175,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             selectVideo(3);
         } else if (v == mPlayBtn) {
             startPlay();
+        } else if (v == mDecodeBtn) {
+            startDecode();
         }
+    }
+
+    private void startDecode() {
+        if (mMediaData1 == null && mMediaData2 == null && mMediaData3 == null) {
+            Toast.makeText(this, "请选择视频", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        ArrayList<MediaData> list = new ArrayList<>();
+        if (mMediaData1 != null) {
+            list.add(mMediaData1);
+        }
+        if (mMediaData2 != null) {
+            list.add(mMediaData2);
+        }
+        if (mMediaData3 != null) {
+            list.add(mMediaData3);
+        }
+        Intent intent = new Intent(this, DecodeTestActivity.class);
+        intent.putParcelableArrayListExtra("list", list);
+        startActivity(intent);
     }
 
     private void startPlay() {
@@ -181,8 +215,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (mMediaData3 != null) {
             list.add(mMediaData3);
         }
-        Intent intent = new Intent(this,PlayActivity.class);
-        intent.putParcelableArrayListExtra("list",list);
+        Intent intent = new Intent(this, PlayActivity.class);
+        intent.putParcelableArrayListExtra("list", list);
         startActivity(intent);
     }
 
@@ -207,6 +241,32 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (mediaData != null) {
             mediaData.startTimeMs = (long) progressLow;
             mediaData.endTimeMs = (long) progressHigh;
+        }
+    }
+
+    private void requestContactPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            //申请 WRITE_CONTACTS 权限
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                    1);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        handleGrantResults(requestCode, grantResults);
+    }
+
+    private void handleGrantResults(int requestCode, int[] grantResults) {
+        if (requestCode == 1) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission Granted 获得权限后执行xxx
+            } else {
+                // Permission Denied 拒绝后xx的操作。
+                Toast.makeText(this, "未获得读取视频文件的权限", Toast.LENGTH_LONG).show();
+            }
         }
     }
 }

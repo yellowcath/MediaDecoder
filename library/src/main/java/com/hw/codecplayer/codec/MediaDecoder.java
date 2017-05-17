@@ -20,7 +20,7 @@ public class MediaDecoder implements IMediaDecoder, OnFrameDecodeListener {
      * 用于两个视频切换时两帧之间的时间间隔
      */
     private static final int DEFAULT_FRAME_INTERVAL_MS = 30;
-    private static final int DEFAULT_TIME_OUT = 10000;
+    private static final int DEFAULT_TIME_OUT = 15000;
     /**
      * 默认seek精度
      */
@@ -93,7 +93,22 @@ public class MediaDecoder implements IMediaDecoder, OnFrameDecodeListener {
 
     @Override
     public void release() {
-
+       if(mCurLoader!=null){
+           mCurLoader.release();
+           mCurLoader = null;
+       }
+        if(mNextLoader!=null){
+            mNextLoader.release();
+            mNextLoader = null;
+        }
+        if(mCurThread!=null){
+            mCurThread.quit();
+            mCurThread = null;
+        }
+        if(mNextThread!=null){
+            mNextThread.quit();
+            mNextThread = null;
+        }
     }
 
     @Override
