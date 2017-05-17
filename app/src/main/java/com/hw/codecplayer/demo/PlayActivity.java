@@ -6,10 +6,10 @@ import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.TextView;
+import android.widget.Toast;
 import com.hw.codecplayer.codec.MediaDecoder;
 import com.hw.codecplayer.codec.OnFrameDecodeListener;
 import com.hw.codecplayer.demo.gl.GLFrameRenderer;
-import com.hw.codecplayer.demo.util.AssetsUtil;
 import com.hw.codecplayer.domain.MediaData;
 import com.hw.codecplayer.domain.MediaFrame;
 import com.hw.codecplayer.util.CL;
@@ -17,9 +17,6 @@ import com.hw.codecplayer.util.MediaFramePool;
 import com.hw.codecplayer.util.RunnableThread;
 
 import javax.microedition.khronos.opengles.GL10;
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class PlayActivity extends AppCompatActivity {
@@ -33,12 +30,24 @@ public class PlayActivity extends AppCompatActivity {
     private volatile int mFrameDrawCount;
     private volatile long mStartDrawTime;
     private GLFrameRenderer mFrameRenderer;
+    private List<MediaData> mDataList;
+    private int mCodecColorFormat;
+    private String mVideoSize;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         CL.setLogEnable(true);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_play);
+
+        if (getIntent() != null) {
+            mDataList = getIntent().getParcelableArrayListExtra("list");
+        }
+        if (mDataList == null || mDataList.size() == 0) {
+            Toast.makeText(this, "无视频数据", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
         mTextView = (TextView) findViewById(R.id.textview);
         mPreviewView = (GLSurfaceView) findViewById(R.id.previewview);
         mPreviewView.setEGLContextClientVersion(2);
@@ -74,7 +83,11 @@ public class PlayActivity extends AppCompatActivity {
             public void run() {
                 float second = (System.currentTimeMillis() - mStartDrawTime) / 1000f;
                 float frameRate = mFrameDrawCount / second;
-                mTextView.setText("fps:" + (int) frameRate);
+                if (mVideoSize == null) {
+                    mVideoSize = "";
+                }
+                mTextView.setText("fps:" + (int) frameRate + " \ncolorFormat:" + mCodecColorFormat
+                        + "\n" + mVideoSize);
             }
         });
     }
@@ -89,28 +102,28 @@ public class PlayActivity extends AppCompatActivity {
     private void initDecoder() {
         CL.setLogEnable(true);
         Context appContext = getApplicationContext();
-        File videoFile1 = new File(appContext.getCacheDir(), "1.mp4");
-        File videoFile2 = new File(appContext.getCacheDir(), "2.mp4");
-        File videoFile3 = new File(appContext.getCacheDir(), "3.mp4");
-
-        try {
-            AssetsUtil.copyAssetsFileTo(appContext, "GOPR1996.MP4", videoFile1.getAbsoluteFile());
-//            AssetsUtil.copyAssetsFileTo(appContext, "GOPR2002.MP4", videoFile2.getAbsoluteFile());
-            AssetsUtil.copyAssetsFileTo(appContext, "GOPR2019.MP4", videoFile2.getAbsoluteFile());
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        MediaData mediaData1 = new MediaData(videoFile1.getAbsolutePath(), 8000, 12000);
-        MediaData mediaData2 = new MediaData(videoFile2.getAbsolutePath(), 8000, 12000);
-//        MediaData mediaData3 = new MediaData(videoFile3.getAbsolutePath(), 20000, 24000);
-
-        List<MediaData> dataList = new ArrayList<>();
-        dataList.add(mediaData1);
-        dataList.add(mediaData2);
-//        dataList.add(mediaData3);
-        final MediaDecoder mediaDecoder = new MediaDecoder(dataList);
+//        File videoFile1 = new File(appContext.getCacheDir(), "1.mp4");
+//        File videoFile2 = new File(appContext.getCacheDir(), "2.mp4");
+//        File videoFile3 = new File(appContext.getCacheDir(), "3.mp4");
+//
+//        try {
+//            AssetsUtil.copyAssetsFileTo(appContext, "GOPR1996.MP4", videoFile1.getAbsoluteFile());
+////            AssetsUtil.copyAssetsFileTo(appContext, "GOPR2002.MP4", videoFile2.getAbsoluteFile());
+//            AssetsUtil.copyAssetsFileTo(appContext, "GOPR2019.MP4", videoFile2.getAbsoluteFile());
+//
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        MediaData mediaData1 = new MediaData(videoFile1.getAbsolutePath(), 8000, 12000);
+//        MediaData mediaData2 = new MediaData(videoFile2.getAbsolutePath(), 8000, 12000);
+////        MediaData mediaData3 = new MediaData(videoFile3.getAbsolutePath(), 20000, 24000);
+//
+//        List<MediaData> dataList = new ArrayList<>();
+//        dataList.add(mediaData1);
+//        dataList.add(mediaData2);
+////        dataList.add(mediaData3);
+        final MediaDecoder mediaDecoder = new MediaDecoder(mDataList);
         mediaDecoder.setOnFrameDecodeListener(new OnFrameDecodeListener() {
             @Override
             public void onFrameDecode(final Image frameImage, int codecColorFormat, final long frameTimeUs, boolean end) {
@@ -121,6 +134,8 @@ public class PlayActivity extends AppCompatActivity {
                     long time = System.currentTimeMillis() - mStartTime;
                     CL.i("总计耗时:" + time + "ms");
                 }
+                mVideoSize = frameImage.getWidth() + "X" + frameImage.getHeight();
+                mCodecColorFormat = codecColorFormat;
                 if (CL.isLogEnable()) {
 //                    String imageStr = String.format("%dX%d,cropRect:%s,format:%d", frameImage.getWidth(), frameImage.getHeight(), frameImage.getCropRect().toShortString(), frameImage.getFormat());
 //                    String uvplaneStr = String.format("pixelStride:%d,rowStride:%d", frameImage.getPlanes()[1].getPixelStride(), frameImage.getPlanes()[1].getRowStride());
@@ -130,7 +145,7 @@ public class PlayActivity extends AppCompatActivity {
                 if (!end) {
                     offerImage(frameImage, codecColorFormat, frameTimeUs);
                 }
-                CL.i("currentMediaFormat:"+mediaDecoder.getCurrentMediaFormat().toString());
+                CL.i("currentMediaFormat:" + mediaDecoder.getCurrentMediaFormat().toString());
 
             }
 
@@ -159,7 +174,7 @@ public class PlayActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if(mFrameRenderer!=null){
+        if (mFrameRenderer != null) {
             mFrameRenderer.destroy();
         }
     }

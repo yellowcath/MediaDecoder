@@ -44,9 +44,13 @@ public class MySeekbar extends View {
     private double defaultScreenLow = 0;    //默认前滑块位置百分比
     private double defaultScreenHigh = 100;  //默认后滑块位置百分比
     private OnSeekBarChangeListener mBarChangeListener;
+
+    private int mMax = 100;
+
     public MySeekbar(Context context) {
         this(context, null);
     }
+
     public MySeekbar(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
     }
@@ -73,11 +77,11 @@ public class MySeekbar extends View {
         mOffsetLow = mThumbWidth / 2;
         mOffsetHigh = width - mThumbWidth / 2;
         mDistance = width - mThumbWidth;
-        if(defaultScreenLow != 0) {
-            mOffsetLow = formatInt(defaultScreenLow / 100 * (mDistance)) + mThumbWidth / 2;
+        if (defaultScreenLow != 0) {
+            mOffsetLow = formatInt(defaultScreenLow / mMax * (mDistance)) + mThumbWidth / 2;
         }
-        if(defaultScreenHigh != 100) {
-            mOffsetHigh = formatInt(defaultScreenHigh / 100 * (mDistance)) + mThumbWidth / 2;
+        if (defaultScreenHigh != mMax) {
+            mOffsetHigh = formatInt(defaultScreenHigh / mMax * (mDistance)) + mThumbWidth / 2;
         }
         setMeasuredDimension(width, mThumbWidth + mThumbMarginTop + 2);
     }
@@ -108,10 +112,15 @@ public class MySeekbar extends View {
         mThumbHigh.setBounds((int) (mOffsetHigh - mThumbWidth / 2), mThumbMarginTop, (int) (mOffsetHigh + mThumbWidth / 2), mThumbWidth + mThumbMarginTop);
         mThumbHigh.draw(canvas);
         //当前滑块刻度
-        double progressLow = formatInt((mOffsetLow - mThumbWidth / 2) * 100 / mDistance);
-        double progressHigh = formatInt((mOffsetHigh - mThumbWidth / 2) * 100 / mDistance);
-        canvas.drawText((int) progressLow + "", (int) mOffsetLow - 2 - 2, mTextViewMarginTop, text_Paint);
-        canvas.drawText((int) progressHigh + "", (int) mOffsetHigh - 2, mTextViewMarginTop, text_Paint);
+        double progressLow = formatInt((mOffsetLow - mThumbWidth / 2) * mMax / mDistance);
+        double progressHigh = formatInt((mOffsetHigh - mThumbWidth / 2) * mMax / mDistance);
+
+        //ms转化为s
+        String low = String.format("%.1f",progressLow/1000);
+        String high = String.format("%.1f",progressHigh/1000);
+
+        canvas.drawText(low, (int) mOffsetLow - 2 - 2, mTextViewMarginTop, text_Paint);
+        canvas.drawText(high, (int) mOffsetHigh - 2, mTextViewMarginTop, text_Paint);
         if (mBarChangeListener != null) {
             mBarChangeListener.onProgressChanged(this, progressLow, progressHigh);
         }
@@ -217,14 +226,14 @@ public class MySeekbar extends View {
     //设置前滑块的值
     public void setProgressLow(double progressLow) {
         this.defaultScreenLow = progressLow;
-        mOffsetLow = formatInt(progressLow / 100 * (mDistance)) + mThumbWidth / 2;
+        mOffsetLow = formatInt(progressLow / mMax * (mDistance)) + mThumbWidth / 2;
         refresh();
     }
 
     //设置后滑块的值
     public void setProgressHigh(double progressHigh) {
         this.defaultScreenHigh = progressHigh;
-        mOffsetHigh = formatInt(progressHigh / 100 * (mDistance)) + mThumbWidth / 2;
+        mOffsetHigh = formatInt(progressHigh / mMax * (mDistance)) + mThumbWidth / 2;
         refresh();
     }
 
@@ -254,4 +263,8 @@ public class MySeekbar extends View {
 //        return pDouble;
 //    }
 
+    public void setMax(int max) {
+        mMax = max;
+        requestLayout();
+    }
 }
