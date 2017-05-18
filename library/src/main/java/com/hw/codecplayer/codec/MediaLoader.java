@@ -243,6 +243,7 @@ public class MediaLoader implements IMediaLoader {
 
     @Override
     public void start() {
+        CL.i("开始解码，DecodeLatch.countDown");
         mDecodeLatch.countDown();
     }
 
@@ -258,8 +259,16 @@ public class MediaLoader implements IMediaLoader {
 
     @Override
     public void release() {
-        mMediaExtractor.release();
-        mMediaCodec.release();
+        try {
+            if (mMediaExtractor != null) {
+                mMediaExtractor.release();
+            }
+            if (mMediaCodec != null) {
+                mMediaCodec.release();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
