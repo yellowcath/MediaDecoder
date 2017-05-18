@@ -9,9 +9,10 @@ import android.support.test.runner.AndroidJUnit4;
 import com.hw.codecplayer.codec.MediaLoader;
 import com.hw.codecplayer.codec.OnFrameDecodeListener;
 import com.hw.codecplayer.demo.util.AssetsUtil;
+import com.hw.codecplayer.demo.util.DecodeTrace;
 import com.hw.codecplayer.domain.MediaData;
-import com.hw.codecplayer.util.RunnableThread;
 import com.hw.codecplayer.util.CL;
+import com.hw.codecplayer.util.RunnableThread;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -22,7 +23,7 @@ import java.io.IOException;
  * Created by huangwei on 2017/5/12.
  */
 @RunWith(AndroidJUnit4.class)
-public class MediaLoaderTest {
+public class MediaLoaderAsyncTest {
     @Test
     public void testLoader() {
         CL.setLogEnable(true);
@@ -47,9 +48,8 @@ public class MediaLoaderTest {
         }
         mCurLoader.setOnFrameDecodeListener(new OnFrameDecodeListener() {
             @Override
-            public void onFrameDecode(Image frameImage,int codecColorFormat, long frameTimeUs, boolean end) {
-                long releativeTimeUs = frameTimeUs - data.startTimeMs * 1000;
-                CL.i("onFrameDecode：" + frameTimeUs + " end:" + end + " 相对时间:" + releativeTimeUs / 1000 + "ms");
+            public void onFrameDecode(Image frameImage, int codecColorFormat, long frameTimeUs, boolean end) {
+                DecodeTrace.onFrameDecode();
             }
 
             @Override

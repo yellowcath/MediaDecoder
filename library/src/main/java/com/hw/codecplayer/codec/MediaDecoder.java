@@ -29,7 +29,7 @@ public class MediaDecoder implements IMediaDecoder, OnFrameDecodeListener {
     private List<MediaData> mDataList;
     private MediaData mCurData;
     private int mCurIndex;
-    private MediaLoader mCurLoader, mNextLoader;
+    private IMediaLoader mCurLoader, mNextLoader;
     private RunnableThread mCurThread, mNextThread;
     /**
      * seek时的精度，单位ms
