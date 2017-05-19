@@ -108,8 +108,6 @@ public class MediaLoader implements IMediaLoader {
         CL.i("seekToMs:" + mSeekToTimeMs + " seekSampleTimeMs:" + seekSampleTimeMs);
         if (mSeekToTimeMs - seekSampleTimeMs <= mSeekAccuracyMs) {
             CL.i("一步到位，颇费");
-            mEndTime = System.currentTimeMillis();
-            return;
         }
         mMediaCodec.start();
         startDecode(mMediaCodec);
