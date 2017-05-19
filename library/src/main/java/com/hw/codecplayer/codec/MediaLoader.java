@@ -99,15 +99,15 @@ public class MediaLoader implements IMediaLoader {
     public void seekAndDecode() {
         if (mSeekToTimeMs <= 0 || !mMediaData.shouldCut) {
             CL.i("不需要Seek");
-            return;
-        }
-        mStartTime = System.currentTimeMillis();
-        long seekToTimeUs = mSeekToTimeMs * 1000;
-        mMediaExtractor.seekTo(seekToTimeUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
-        long seekSampleTimeMs = mMediaExtractor.getSampleTime() / 1000;
-        CL.i("seekToMs:" + mSeekToTimeMs + " seekSampleTimeMs:" + seekSampleTimeMs);
-        if (mSeekToTimeMs - seekSampleTimeMs <= mSeekAccuracyMs) {
-            CL.i("一步到位，颇费");
+        } else {
+            mStartTime = System.currentTimeMillis();
+            long seekToTimeUs = mSeekToTimeMs * 1000;
+            mMediaExtractor.seekTo(seekToTimeUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+            long seekSampleTimeMs = mMediaExtractor.getSampleTime() / 1000;
+            CL.i("seekToMs:" + mSeekToTimeMs + " seekSampleTimeMs:" + seekSampleTimeMs);
+            if (mSeekToTimeMs - seekSampleTimeMs <= mSeekAccuracyMs) {
+                CL.i("一步到位，颇费");
+            }
         }
         mMediaCodec.start();
         startDecode(mMediaCodec);
