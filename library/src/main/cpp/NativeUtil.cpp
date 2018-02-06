@@ -10,9 +10,11 @@ void copyData(unsigned char* from, int len, unsigned char* to, int pixelStride, 
         return;
     }
     int rowContentWidth = pixelStride * width;
-    for(int i=0,toIndex=0;i<len;i+=pixelStride,toIndex++){
+    for(int i=0,toIndex=0;i<len;){
         if(i%rowStride<rowContentWidth){
-            to[toIndex] = from[i];
+            to[toIndex++] = from[i++];
+        }else{
+            i++;
         }
     }
 }
