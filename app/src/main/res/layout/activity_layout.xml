@@ -12,7 +12,7 @@
             android:id="@+id/img1"
             android:layout_width="80dp"
             android:layout_height="80dp" />
-        <com.hw.codecplayer.demo.ui.MySeekbar
+        <com.hw.mediadecoder.demo.ui.MySeekbar
             android:id="@+id/seek1"
             android:layout_width="200dp"
             android:layout_height="10dp"
@@ -41,7 +41,7 @@
             android:id="@+id/img2"
             android:layout_width="80dp"
             android:layout_height="80dp" />
-        <com.hw.codecplayer.demo.ui.MySeekbar
+        <com.hw.mediadecoder.demo.ui.MySeekbar
             android:id="@+id/seek2"
             android:layout_width="200dp"
             android:layout_height="10dp"
@@ -70,7 +70,7 @@
             android:id="@+id/img3"
             android:layout_width="80dp"
             android:layout_height="80dp" />
-        <com.hw.codecplayer.demo.ui.MySeekbar
+        <com.hw.mediadecoder.demo.ui.MySeekbar
             android:id="@+id/seek3"
             android:layout_width="200dp"
             android:layout_height="10dp"

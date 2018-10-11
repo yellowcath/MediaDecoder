@@ -5,7 +5,7 @@ extern "C"
 
 
 JNIEXPORT void JNICALL
-Java_com_hw_codecplayer_util_NativeUtil_planesToYUV(JNIEnv *env, jclass type, jobject buffer1, jobject buffer2,
+Java_com_hw_mediadecoder_util_NativeUtil_planesToYUV(JNIEnv *env, jclass type, jobject buffer1, jobject buffer2,
                                                     jobject buffer3, jint capacity1, jint capacity2, jint capacity3,
                                                     jint pixelStride1, jint pixelStride2, jint pixelStride3,
                                                     jint rowStride1,jint rowStride2,jint rowStride3,

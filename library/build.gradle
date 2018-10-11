@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 25
-    buildToolsVersion "25.0.2"
+    buildToolsVersion '27.0.3'
 
     defaultConfig {
         minSdkVersion 21
@@ -20,12 +20,10 @@ android {
         ndk {
             // Specifies the ABI configurations of your native
             // libraries Gradle should build and package with your APK.
-            abiFilters 'armeabi-v7a','arm64-v8a','x86'
+            abiFilters 'armeabi-v7a'
             //'x86', 'x86_64', 'armeabi', ,
             //        'arm64-v8a'
         }
-        renderscriptTargetApi 23
-        renderscriptSupportModeEnabled true
     }
     publishNonDefault  true
     externalNativeBuild {
@@ -42,10 +40,9 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    androidTestImplementation('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    compile 'com.android.support:appcompat-v7:25.3.1'
-    testCompile 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.12'
 }

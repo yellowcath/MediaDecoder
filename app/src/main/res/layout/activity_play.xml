@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.hw.codecplayer.demo.gl.GLFrameSurface
+    <com.hw.mediadecoder.demo.gl.GLFrameSurface
         android:id="@+id/previewview"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />

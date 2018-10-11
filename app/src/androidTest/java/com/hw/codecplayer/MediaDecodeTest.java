@@ -5,11 +5,11 @@ import android.media.Image;
 import android.os.SystemClock;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
-import com.hw.codecplayer.codec.MediaDecoder;
-import com.hw.codecplayer.codec.OnFrameDecodeListener;
-import com.hw.codecplayer.demo.util.AssetsUtil;
-import com.hw.codecplayer.domain.MediaData;
-import com.hw.codecplayer.util.CL;
+import com.hw.mediadecoder.MultiMediaDecoder;
+import com.hw.mediadecoder.codec.OnFrameDecodeListener;
+import com.hw.mediadecoder.demo.util.AssetsUtil;
+import com.hw.mediadecoder.domain.MediaData;
+import com.hw.mediadecoder.util.CL;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -49,10 +49,10 @@ public class MediaDecodeTest {
         dataList.add(mediaData2);
         dataList.add(mediaData3);
 
-        MediaDecoder mediaDecoder = new MediaDecoder(dataList);
-        mediaDecoder.setOnFrameDecodeListener(new OnFrameDecodeListener() {
+        MultiMediaDecoder multiMediaDecoder = new MultiMediaDecoder(dataList);
+        multiMediaDecoder.setOnFrameDecodeListener(new OnFrameDecodeListener() {
             @Override
-            public void onFrameDecode(Image frameImage, long frameTimeUs, boolean end) {
+            public void onFrameDecode(Image frameImage, int codecColorFormat, long frameTimeUs, boolean end) {
                 CL.i("onFrameDecode,frameTimeUs:" + frameTimeUs + " end:" + end);
                 long s = System.currentTimeMillis();
 //                ByteBuffer byteBuffer = ByteBuffer.allocate((int) (frameImage.getWidth()*frameImage.getHeight()*1.5f));
@@ -67,11 +67,11 @@ public class MediaDecodeTest {
             }
         });
         try {
-            mediaDecoder.prepare();
+            multiMediaDecoder.prepare();
         } catch (Exception e) {
             e.printStackTrace();
         }
-        mediaDecoder.start();
+        multiMediaDecoder.start();
 
         SystemClock.sleep(100001);
     }

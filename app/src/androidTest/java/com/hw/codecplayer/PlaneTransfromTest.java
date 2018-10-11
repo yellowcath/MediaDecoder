@@ -1,7 +1,8 @@
 package com.hw.codecplayer;
 
 import android.support.test.runner.AndroidJUnit4;
-import com.hw.codecplayer.util.CL;
+import com.hw.mediadecoder.util.CL;
+import com.hw.mediadecoder.util.NativeUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -53,11 +54,11 @@ public class PlaneTransfromTest {
         ByteBuffer bufferU = ByteBuffer.allocateDirect(width * height / 4);
         ByteBuffer bufferV = ByteBuffer.allocateDirect(width * height / 4);
 
-//        NativeUtil.planesToYUV(buffer1, buffer2, buffer3,
-//                capacity1, capacity2, capacity3,
-//                pixelStride1, pixelStride2, pixelStride3,
-//                rowStride1,rowStride2,rowStride3,
-//                width, bufferY, bufferU, bufferV);
+        NativeUtil.planesToYUV(buffer1, buffer2, buffer3,
+                capacity1, capacity2, capacity3,
+                pixelStride1, pixelStride2, pixelStride3,
+                rowStride1,rowStride2,rowStride3,
+                width, bufferY, bufferU, bufferV);
         byte[] result = new byte[bufferY.capacity() + bufferU.capacity() + bufferV.capacity()];
         bufferY.get(result, 0, bufferY.capacity());
         bufferU.get(result, bufferY.capacity(), bufferU.capacity());

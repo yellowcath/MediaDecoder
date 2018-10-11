@@ -6,13 +6,13 @@ import android.media.MediaExtractor;
 import android.os.SystemClock;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
-import com.hw.codecplayer.codec.MediaLoader;
-import com.hw.codecplayer.codec.OnFrameDecodeListener;
-import com.hw.codecplayer.demo.util.AssetsUtil;
-import com.hw.codecplayer.demo.util.DecodeTrace;
-import com.hw.codecplayer.domain.MediaData;
-import com.hw.codecplayer.util.CL;
-import com.hw.codecplayer.util.RunnableThread;
+import com.hw.mediadecoder.codec.MediaDecoder;
+import com.hw.mediadecoder.codec.OnFrameDecodeListener;
+import com.hw.mediadecoder.demo.util.AssetsUtil;
+import com.hw.mediadecoder.demo.util.DecodeTrace;
+import com.hw.mediadecoder.domain.MediaData;
+import com.hw.mediadecoder.util.CL;
+import com.hw.mediadecoder.util.RunnableThread;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -39,7 +39,7 @@ public class MediaLoaderAsyncTest {
         final MediaData data = new MediaData(videoFile1.getAbsolutePath(), 8000, 12000);
         RunnableThread seekThread = new RunnableThread("seek");
         seekThread.start();
-        MediaLoader mCurLoader = new MediaLoader(new MediaExtractor(), data, seekThread, 50);
+        MediaDecoder mCurLoader = new MediaDecoder(new MediaExtractor(), data, seekThread, 50);
         mCurLoader.loadAndSeekAsync();
         try {
             mCurLoader.waitSeekFinish(10000);
