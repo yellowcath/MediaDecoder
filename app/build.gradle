@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
+
     compileSdkVersion 25
     buildToolsVersion '27.0.3'
     defaultConfig {
@@ -26,7 +27,8 @@ dependencies {
     })
     implementation 'com.android.support:appcompat-v7:25.3.1'
     testImplementation 'junit:junit:4.12'
-    //    debugCompile project(path: ':library', configuration: 'debug')
-    //    releaseCompile project(path: ':library', configuration: 'release')
-    implementation project(':library')
+//    debugCompile project(path: ':library', configuration: 'debug')
+//    releaseCompile project(path: ':library', configuration: 'release')
+    debugImplementation project(':library')
+//    releaseImplementation project(':library')
 }

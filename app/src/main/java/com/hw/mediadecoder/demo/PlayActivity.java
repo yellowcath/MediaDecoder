@@ -13,11 +13,11 @@ import com.hw.mediadecoder.MultiMediaDecoder;
 import com.hw.mediadecoder.codec.OnFrameDecodeListener;
 import com.hw.mediadecoder.demo.gl.GLFrameRenderer;
 import com.hw.mediadecoder.domain.MediaData;
-import com.hw.mediadecoder.domain.MediaFrame;
+import com.hw.mediadecoder.domain.VideoFrame;
 import com.hw.mediadecoder.util.CL;
 import com.hw.mediadecoder.util.MediaDataPool;
-import com.hw.mediadecoder.util.MediaFrameAdapter;
 import com.hw.mediadecoder.util.RunnableThread;
+import com.hw.mediadecoder.util.VideoFrameAdapter;
 
 import javax.microedition.khronos.opengles.GL10;
 import java.util.List;
@@ -29,7 +29,7 @@ public class PlayActivity extends AppCompatActivity {
 
     private long mStartTime;
     private RunnableThread mSeekThread;
-    private MediaDataPool<MediaFrame> mFramePool = new MediaDataPool<MediaFrame>(10, 10, new MediaFrameAdapter());
+    private MediaDataPool<VideoFrame> mFramePool = new MediaDataPool<VideoFrame>(10, 10, new VideoFrameAdapter(VideoFrame.YuvType.YUV420P));
     private volatile int mFrameDrawCount;
     private volatile long mStartDrawTime;
     private GLFrameRenderer mFrameRenderer;

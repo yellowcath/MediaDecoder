@@ -170,7 +170,7 @@ public class GLProgramYUV implements IGLProgram {
     }
 
     @Override
-    public void buildTextures(ByteBuffer y, ByteBuffer u, ByteBuffer v, int width, int height) {
+    public void buildTextures(ByteBuffer y,ByteBuffer u,ByteBuffer v,int width, int height) {
         boolean videoSizeChanged = (width != _video_width || height != _video_height);
         if (videoSizeChanged) {
             _video_width = width;

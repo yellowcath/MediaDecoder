@@ -7,11 +7,13 @@ import com.hw.mediadecoder.util.MediaUtil;
 
 import java.nio.ByteBuffer;
 
+
 /**
  * Created by huangwei on 2017/5/13.
+ * 只是对{@link Image}的一个拷贝
+ * 提供分开的Y、UV，或Y、U、V（原始数据，可能包含stride）
  */
-
-public class MediaFrame {
+public class ImageFrame {
     protected ByteBuffer buffer1;
     protected ByteBuffer buffer2;
     protected ByteBuffer buffer3;
@@ -34,7 +36,7 @@ public class MediaFrame {
      */
     public int codecColorFormat;
 
-    public static MediaFrame resetFromImage(Image image, int codecColorFormat, long timestampUs, MediaFrame mediaFrame) {
+    public static ImageFrame resetFromImage(Image image, int codecColorFormat, long timestampUs, ImageFrame mediaFrame) {
         checkFormat(image);
         Image.Plane[] planes = image.getPlanes();
         mediaFrame.width = image.getWidth();
@@ -71,9 +73,9 @@ public class MediaFrame {
         return dest;
     }
 
-    public static MediaFrame createFromImage(Image image, int codecColorFormat, long timestampUs) {
+    public static ImageFrame createFromImage(Image image, int codecColorFormat, long timestampUs) {
         checkFormat(image);
-        return resetFromImage(image, codecColorFormat, timestampUs, new MediaFrame());
+        return resetFromImage(image, codecColorFormat, timestampUs, new ImageFrame());
     }
 
     private static void checkFormat(Image image) throws UnsupportedOperationException {
