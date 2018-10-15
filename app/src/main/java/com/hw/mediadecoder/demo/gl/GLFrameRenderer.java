@@ -5,8 +5,9 @@ import android.opengl.GLSurfaceView;
 import android.opengl.GLSurfaceView.Renderer;
 import android.util.DisplayMetrics;
 import com.hw.mediadecoder.demo.PlayDemo;
+import com.hw.mediadecoder.domain.MediaFrame;
 import com.hw.mediadecoder.util.CL;
-import com.hw.mediadecoder.util.MediaFramePool;
+import com.hw.mediadecoder.util.MediaDataPool;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -26,7 +27,7 @@ public class GLFrameRenderer implements Renderer {
     private PlayDemo playDemo;
     private boolean mUseUVBUffer;
 
-    public GLFrameRenderer(GLSurfaceView surface, DisplayMetrics dm, MediaFramePool pool) {
+    public GLFrameRenderer(GLSurfaceView surface, DisplayMetrics dm, MediaDataPool<MediaFrame> pool) {
         mTargetSurface = surface;
         mScreenWidth = dm.widthPixels;
         mScreenHeight = dm.heightPixels;

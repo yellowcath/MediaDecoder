@@ -12,9 +12,9 @@ import java.nio.ByteBuffer;
  */
 
 public class MediaFrame {
-    public ByteBuffer buffer1;
-    public ByteBuffer buffer2;
-    public ByteBuffer buffer3;
+    protected ByteBuffer buffer1;
+    protected ByteBuffer buffer2;
+    protected ByteBuffer buffer3;
 
     public int pixelStride1;
     public int pixelStride2;
@@ -34,7 +34,7 @@ public class MediaFrame {
      */
     public int codecColorFormat;
 
-    public static MediaFrame resetFromImage(Image image,int codecColorFormat, long timestampUs, MediaFrame mediaFrame) {
+    public static MediaFrame resetFromImage(Image image, int codecColorFormat, long timestampUs, MediaFrame mediaFrame) {
         checkFormat(image);
         Image.Plane[] planes = image.getPlanes();
         mediaFrame.width = image.getWidth();
@@ -46,7 +46,7 @@ public class MediaFrame {
         mediaFrame.buffer1 = copyBuffer(mediaFrame.buffer1, planes[0].getBuffer());
         if (MediaUtil.useUVBuffer(codecColorFormat)) {
             mediaFrame.buffer2 = copyBuffer(mediaFrame.buffer2, planes[2].getBuffer());
-        }else{
+        } else {
             mediaFrame.buffer2 = copyBuffer(mediaFrame.buffer2, planes[1].getBuffer());
             mediaFrame.buffer3 = copyBuffer(mediaFrame.buffer3, planes[2].getBuffer());
             mediaFrame.pixelStride1 = planes[0].getPixelStride();
@@ -71,9 +71,9 @@ public class MediaFrame {
         return dest;
     }
 
-    public static MediaFrame createFromImage(Image image,int codecColorFormat, long timestampUs) {
+    public static MediaFrame createFromImage(Image image, int codecColorFormat, long timestampUs) {
         checkFormat(image);
-        return resetFromImage(image, codecColorFormat,timestampUs, new MediaFrame());
+        return resetFromImage(image, codecColorFormat, timestampUs, new MediaFrame());
     }
 
     private static void checkFormat(Image image) throws UnsupportedOperationException {
@@ -87,5 +87,30 @@ public class MediaFrame {
      */
     public boolean useUVBuffer() {
         return MediaUtil.useUVBuffer(codecColorFormat);
+    }
+
+    public ByteBuffer getBufferY() {
+        return buffer1;
+    }
+
+    public ByteBuffer getBufferU() {
+        if (!useUVBuffer()) {
+            return buffer2;
+        }
+        throw new RuntimeException("useUVBuffer() is true!please call getBufferUV()");
+    }
+
+    public ByteBuffer getBufferV() {
+        if (!useUVBuffer()) {
+            return buffer3;
+        }
+        throw new RuntimeException("useUVBuffer() is true!please call getBufferUV()");
+    }
+
+    public ByteBuffer getBufferUV() {
+        if (useUVBuffer()) {
+            return buffer2;
+        }
+        throw new RuntimeException("useUVBuffer() is false!please call getBufferU() & getBufferV()");
     }
 }

@@ -120,7 +120,7 @@ public class MultiMediaDecoder implements IMultiMediaDecoder, OnFrameDecodeListe
 
     @Override
     public MediaFormat getCodecMediaFormat() {
-        return mCurLoader.getCodecMediaFormat();
+        return mCurLoader==null?null:mCurLoader.getCodecMediaFormat();
     }
 
     @Override

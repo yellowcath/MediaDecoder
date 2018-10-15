@@ -5,7 +5,7 @@ import android.os.SystemClock;
 import com.hw.mediadecoder.demo.gl.GLFrameRenderer;
 import com.hw.mediadecoder.domain.MediaFrame;
 import com.hw.mediadecoder.util.CL;
-import com.hw.mediadecoder.util.MediaFramePool;
+import com.hw.mediadecoder.util.MediaDataPool;
 import com.hw.mediadecoder.util.NativeUtil;
 
 import java.nio.ByteBuffer;
@@ -17,7 +17,7 @@ public class PlayDemo {
 
     private long mStartTimeMs;
     private GLFrameRenderer frameRenderer;
-    private MediaFramePool mMediaFramePool;
+    private MediaDataPool<MediaFrame> mMediaFramePool;
 
     private ByteBuffer y;
     private ByteBuffer u;
@@ -25,7 +25,7 @@ public class PlayDemo {
     private ByteBuffer uv;
     private volatile boolean mRun = true;
 
-    public PlayDemo(GLFrameRenderer renderer, MediaFramePool pool) {
+    public PlayDemo(GLFrameRenderer renderer, MediaDataPool<MediaFrame> pool) {
         frameRenderer = renderer;
         mMediaFramePool = pool;
     }
@@ -72,54 +72,59 @@ public class PlayDemo {
 
     /**
      * YUV420sp的情况直接拷贝
+     *
      * @param mediaFrame
      */
     private void transformAndUpdate420SP(MediaFrame mediaFrame) {
         y.clear();
         uv.clear();
-        y.put(mediaFrame.buffer1);
-        uv.put(mediaFrame.buffer2);
+        y.put(mediaFrame.getBufferY());
+        uv.put(mediaFrame.getBufferUV());
         y.position(0);
         uv.position(0);
         mMediaFramePool.cacheObject(mediaFrame);
-        frameRenderer.update(y, uv,mediaFrame.width,mediaFrame.height,mediaFrame.useUVBuffer());
+        frameRenderer.update(y, uv, mediaFrame.width, mediaFrame.height, mediaFrame.useUVBuffer());
     }
+
     /**
      * YUV420p的情况直接拷贝
+     *
      * @param mediaFrame
      */
-    private void transformAndUpdate420P(MediaFrame mediaFrame){
+    private void transformAndUpdate420P(MediaFrame mediaFrame) {
         y.clear();
         u.clear();
         v.clear();
-        y.put(mediaFrame.buffer1);
-        u.put(mediaFrame.buffer2);
-        v.put(mediaFrame.buffer3);
+        y.put(mediaFrame.getBufferY());
+        u.put(mediaFrame.getBufferU());
+        v.put(mediaFrame.getBufferV());
         y.position(0);
         u.position(0);
         v.position(0);
         mMediaFramePool.cacheObject(mediaFrame);
-        frameRenderer.update(y, u,v,mediaFrame.width,mediaFrame.height,mediaFrame.useUVBuffer());
+        frameRenderer.update(y, u, v, mediaFrame.width, mediaFrame.height, mediaFrame.useUVBuffer());
     }
+
     /**
      * 其它情况根据Image的参数转换
+     *
      * @param mediaFrame
      */
     private void transformAndUpdateYUV(MediaFrame mediaFrame) {
-        if(mediaFrame.codecColorFormat == MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar){
+        if (mediaFrame.codecColorFormat == MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar) {
             transformAndUpdate420P(mediaFrame);
             return;
         }
         CL.i("transformAndUpdateYUV");
-        int capacity1 = mediaFrame.buffer1.capacity();
-        int capacity2 = mediaFrame.buffer2.capacity();
-        int capacity3 = mediaFrame.buffer3.capacity();
+        int capacity1 = mediaFrame.getBufferY().capacity();
+        int capacity2 = mediaFrame.getBufferU().capacity();
+        int capacity3 = mediaFrame.getBufferV().capacity();
 
         y.clear();
         u.clear();
         v.clear();
         long s = System.currentTimeMillis();
-        NativeUtil.planesToYUV(mediaFrame.buffer1, mediaFrame.buffer2, mediaFrame.buffer3,
+        NativeUtil.planesToYUV(mediaFrame.getBufferY(), mediaFrame.getBufferU(), mediaFrame.getBufferV(),
                 capacity1, capacity2, capacity3,
                 mediaFrame.pixelStride1, mediaFrame.pixelStride2, mediaFrame.pixelStride3,
                 mediaFrame.rowStride1, mediaFrame.rowStride2, mediaFrame.rowStride3,
@@ -130,7 +135,7 @@ public class PlayDemo {
             CL.i(String.format("planesToYUV,%dX%d,takes %dms", mediaFrame.width, mediaFrame.height, e - s));
         }
         mMediaFramePool.cacheObject(mediaFrame);
-        frameRenderer.update(y, u, v,mediaFrame.width,mediaFrame.height,mediaFrame.useUVBuffer());
+        frameRenderer.update(y, u, v, mediaFrame.width, mediaFrame.height, mediaFrame.useUVBuffer());
     }
 
     private void checkInit(MediaFrame mediaFrame) {
@@ -154,7 +159,7 @@ public class PlayDemo {
         }
     }
 
-    public void release(){
+    public void release() {
         mRun = false;
     }
 }

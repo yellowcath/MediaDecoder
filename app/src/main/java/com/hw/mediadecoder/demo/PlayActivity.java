@@ -15,7 +15,8 @@ import com.hw.mediadecoder.demo.gl.GLFrameRenderer;
 import com.hw.mediadecoder.domain.MediaData;
 import com.hw.mediadecoder.domain.MediaFrame;
 import com.hw.mediadecoder.util.CL;
-import com.hw.mediadecoder.util.MediaFramePool;
+import com.hw.mediadecoder.util.MediaDataPool;
+import com.hw.mediadecoder.util.MediaFrameAdapter;
 import com.hw.mediadecoder.util.RunnableThread;
 
 import javax.microedition.khronos.opengles.GL10;
@@ -28,7 +29,7 @@ public class PlayActivity extends AppCompatActivity {
 
     private long mStartTime;
     private RunnableThread mSeekThread;
-    private MediaFramePool mFramePool = new MediaFramePool(10, 10);
+    private MediaDataPool<MediaFrame> mFramePool = new MediaDataPool<MediaFrame>(10, 10, new MediaFrameAdapter());
     private volatile int mFrameDrawCount;
     private volatile long mStartDrawTime;
     private GLFrameRenderer mFrameRenderer;
@@ -159,7 +160,6 @@ public class PlayActivity extends AppCompatActivity {
                 if (!end) {
                     offerImage(frameImage, codecColorFormat, frameTimeUs);
                 }
-                CL.i("currentMediaFormat:" + mMultiMediaDecoder.getCodecMediaFormat().toString());
 
             }
 
@@ -179,9 +179,7 @@ public class PlayActivity extends AppCompatActivity {
     }
 
     private void offerImage(Image image, int codecColorFormat, long timeUs) {
-        MediaFrame mediaFrame = mFramePool.getCachedObject();
-        mediaFrame = mediaFrame == null ? MediaFrame.createFromImage(image, codecColorFormat, timeUs) : MediaFrame.resetFromImage(image, codecColorFormat, timeUs, mediaFrame);
-        mFramePool.offer(mediaFrame);
+        mFramePool.offer(image, codecColorFormat, timeUs);
     }
 
     @Override
