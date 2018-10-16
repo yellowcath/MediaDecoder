@@ -8,7 +8,7 @@ import android.os.Parcelable;
  */
 
 public class MediaData implements Parcelable {
-    public static final int END_TIME_VIDEO_END = -1;
+    public static final long END_TIME_VIDEO_END = -1L;
     public String mediaPath;
     public long startTimeMs;
     public long endTimeMs;
