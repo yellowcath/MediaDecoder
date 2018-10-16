@@ -5,6 +5,7 @@ import android.media.Image;
 import android.os.SystemClock;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
+import android.util.Log;
 import com.hw.mediadecoder.MultiMediaDecoder;
 import com.hw.mediadecoder.codec.OnFrameDecodeListener;
 import com.hw.mediadecoder.demo.util.AssetsUtil;
@@ -16,14 +17,55 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Created by huangwei on 2017/5/9.
  */
 @RunWith(AndroidJUnit4.class)
 public class MediaDecodeTest {
+
     @Test
+    public void testDecode(){
+        CL.setLogEnable(true);
+        List<MediaData> videoList = new LinkedList<>();
+        videoList.add(new MediaData("/sdcard/DCIM/Camera/VID_20181016_112747.mp4"));
+        videoList.add(new MediaData("/sdcard/DCIM/Camera/VID_20181016_112747.mp4"));
+        MultiMediaDecoder decoder = new MultiMediaDecoder(new ArrayList<MediaData>(videoList));
+        final CountDownLatch countDownLatch = new CountDownLatch(1);
+        try {
+            decoder.setOnFrameDecodeListener(new OnFrameDecodeListener() {
+                @Override
+                public void onFrameDecode(Image frameImage,int codecColorFormat,long frameTimeUs,boolean end) {
+                    Log.e("hwLog","frame:"+frameImage+" end:"+end+" time:"+frameTimeUs/1000);
+                    if(end){
+                        countDownLatch.countDown();
+                    }
+                }
+
+                @Override
+                public void onDecodeError(Throwable throwable) {
+                    Log.e("hwLog","error:"+throwable);
+                    countDownLatch.countDown();
+                }
+            });
+            decoder.prepare();
+            decoder.start();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        SystemClock.sleep(5000);
+    }
+
+//    @Test
     public void testSeek(){
         CL.setLogEnable(true);
         final Context appContext = InstrumentationRegistry.getTargetContext();
@@ -74,44 +116,5 @@ public class MediaDecodeTest {
         multiMediaDecoder.start();
 
         SystemClock.sleep(100001);
-    }
-
-    @Test
-    public void listSyncSamples() throws IOException {
-//        Context appContext = InstrumentationRegistry.getTargetContext();
-//        File videoFile = new File(appContext.getCacheDir(), "1.mp4");
-//        try {
-//            AssetsUtil.copyAssetsFileTo(appContext, "1.mp4", videoFile.getAbsoluteFile());
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//
-//        Map<String, long[]> ss = new LinkedHashMap<String, long[]>();
-//        int maxIndex = 0;
-//        Movie m = MovieCreator.build(videoFile.getAbsolutePath());
-//        for (Track track : m.getTracks()) {
-//            if ("vide".equals(track.getHandler())) {
-//                ss.put(videoFile.getName() + track.getTrackMetaData().getTrackId(), track.getSyncSamples());
-//                maxIndex = Math.max(maxIndex, track.getSyncSamples().length);
-//            }
-//        }
-//        for (String s : ss.keySet()) {
-//            System.out.print(String.format("|%10s", s));
-//        }
-//        System.out.println("|");
-//
-//        for (int i = 0; i < maxIndex; i++) {
-//            for (String s : ss.keySet()) {
-//                long[] syncSamples = ss.get(s);
-//                try {
-//                    System.out.print(String.format("|%10d", syncSamples[i]));
-//                } catch (IndexOutOfBoundsException e) {
-//                    System.out.print(String.format("|%10s", ""));
-//                }
-//            }
-//            System.out.println("|");
-//        }
-
     }
 }

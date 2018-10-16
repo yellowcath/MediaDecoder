@@ -99,6 +99,8 @@ public class MediaDecoder implements IMediaDecoder {
     public void seekAndDecode() {
         if (mSeekToTimeMs <= 0 || !mMediaData.shouldCut) {
             CL.i("不需要Seek");
+            mMode = Mode.DECODE;
+            mSeekLatch.countDown();
         } else {
             mStartTime = System.currentTimeMillis();
             long seekToTimeUs = mSeekToTimeMs * 1000;
@@ -114,8 +116,11 @@ public class MediaDecoder implements IMediaDecoder {
     }
 
     private void startDecode(MediaCodec codec) {
+        boolean inputFinish = false;
         while (true) {
-            processInput(codec);
+            if(!inputFinish) {
+                inputFinish = processInput(codec);
+            }
             boolean reachEnd = processOutput(codec);
             if (reachEnd) {
                 break;
@@ -123,10 +128,10 @@ public class MediaDecoder implements IMediaDecoder {
         }
     }
 
-    private void processInput(MediaCodec codec) {
+    private boolean processInput(MediaCodec codec) {
         int inputBufferId = codec.dequeueInputBuffer(TIME_OUT);
         if (inputBufferId < 0) {
-            return;
+            return false;
         }
         ByteBuffer byteBuffer = codec.getInputBuffer(inputBufferId);
         long sampleTimeUs = mMediaExtractor.getSampleTime();
@@ -152,21 +157,22 @@ public class MediaDecoder implements IMediaDecoder {
         }
         mInputFrameCount++;
         int size = mMediaExtractor.readSampleData(byteBuffer, 0);
-        if (size == -1 || sampleTimeMs > mMediaData.endTimeMs) {
+        if (size == -1 || (sampleTimeMs > mMediaData.endTimeMs && mMediaData.shouldCut)) {
             if (mMode == Mode.SEEK) {
                 mThrowable = new IOException("出现异常，已经读到视频尾");
             }
             CL.i("已到视频尾");
             mMediaCodec.queueInputBuffer(inputBufferId, 0, 0, sampleTimeUs, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-            return;
+            return true;
         }
         mMediaCodec.queueInputBuffer(inputBufferId, 0, size, sampleTimeUs, 0);
         if (mMode == Mode.SEEK) {
             CL.i("循环seek输入第" + mInputFrameCount + "帧,seekToMs:" + seekToTimeMs + " seekSampleTimeMs:" + sampleTimeMs);
         } else {
-            CL.i("Decode输入第" + mInputFrameCount + "帧,size:" + size);
+            CL.i("Decode输入第" + mInputFrameCount + "帧,size:" + size+" timeMs:"+sampleTimeMs);
         }
         mMediaExtractor.advance();
+        return false;
     }
 
     private boolean processOutput(MediaCodec codec) {
@@ -180,7 +186,7 @@ public class MediaDecoder implements IMediaDecoder {
             return false;
         }
         mOutputFrameCount++;
-//        CL.i("Mode:" + mMode + "输出第" + mOutputFrameCount + "帧,size:" + info.size + " presentationTimeUs:" + info.presentationTimeUs + " flag:" + info.flags);
+        CL.i("Mode:" + mMode + "输出第" + mOutputFrameCount + "帧,size:" + info.size + " presentationTimeUs:" + info.presentationTimeUs + " flag:" + info.flags);
         if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) == MediaCodec.BUFFER_FLAG_END_OF_STREAM) {
             CL.i("已到视频尾，解码完毕");
             if (mOnFrameDecodeListener != null) {
@@ -229,9 +235,7 @@ public class MediaDecoder implements IMediaDecoder {
                 try {
                     prepare();
                     CL.i("初始化MediaCodec-");
-                    if (mMediaData.shouldCut) {
-                        seekAndDecode();
-                    }
+                    seekAndDecode();
                 } catch (IOException e) {
                     mThrowable = e;
                 } catch (IllegalStateException e) {

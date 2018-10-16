@@ -39,7 +39,7 @@ public class MultiMediaDecoder implements IMultiMediaDecoder, OnFrameDecodeListe
     private long mSeekAccuracyMs = DEFAULT_SEEK_ACCURACY;
     private OnFrameDecodeListener mFrameDecodeListener;
     private long mTotalTimestampUs;
-    private long mPreFrameTimestampUs;
+    private long mPreFrameTimestampUs = -1;
     private boolean mLoop;
 
     public MultiMediaDecoder(List<MediaData> mediaDataList) {
@@ -95,19 +95,19 @@ public class MultiMediaDecoder implements IMultiMediaDecoder, OnFrameDecodeListe
 
     @Override
     public void release() {
-       if(mCurLoader!=null){
-           mCurLoader.release();
-           mCurLoader = null;
-       }
-        if(mNextLoader!=null){
+        if (mCurLoader != null) {
+            mCurLoader.release();
+            mCurLoader = null;
+        }
+        if (mNextLoader != null) {
             mNextLoader.release();
             mNextLoader = null;
         }
-        if(mCurThread!=null){
+        if (mCurThread != null) {
             mCurThread.quit();
             mCurThread = null;
         }
-        if(mNextThread!=null){
+        if (mNextThread != null) {
             mNextThread.quit();
             mNextThread = null;
         }
@@ -120,7 +120,7 @@ public class MultiMediaDecoder implements IMultiMediaDecoder, OnFrameDecodeListe
 
     @Override
     public MediaFormat getCodecMediaFormat() {
-        return mCurLoader==null?null:mCurLoader.getCodecMediaFormat();
+        return mCurLoader == null ? null : mCurLoader.getCodecMediaFormat();
     }
 
     @Override
@@ -129,9 +129,9 @@ public class MultiMediaDecoder implements IMultiMediaDecoder, OnFrameDecodeListe
     }
 
     @Override
-    public void onFrameDecode(Image frameImage,int codecColorFormat, long frameTimeUs, boolean end) {
+    public void onFrameDecode(Image frameImage, int codecColorFormat, long frameTimeUs, boolean end) {
         if (!end) {
-            if (mPreFrameTimestampUs == 0) {
+            if (mPreFrameTimestampUs == -1) {
                 mPreFrameTimestampUs = frameTimeUs;
             }
             long timeAddUs = frameTimeUs - mPreFrameTimestampUs;
@@ -139,17 +139,17 @@ public class MultiMediaDecoder implements IMultiMediaDecoder, OnFrameDecodeListe
             mPreFrameTimestampUs = frameTimeUs;
             CL.i("onFrameDecode,timeAddMs" + timeAddUs / 1000 + " 总时长:" + mTotalTimestampUs / 1000 + "ms");
             if (mFrameDecodeListener != null) {
-                mFrameDecodeListener.onFrameDecode(frameImage,codecColorFormat, mTotalTimestampUs, false);
+                mFrameDecodeListener.onFrameDecode(frameImage, codecColorFormat, mTotalTimestampUs, false);
             }
         } else {
-            mPreFrameTimestampUs = 0;
+            mPreFrameTimestampUs = -1;
             mTotalTimestampUs += DEFAULT_FRAME_INTERVAL_MS * 1000;
             CL.i(mCurData.toString() + "解码结束");
             int nextIndex = getNextIndex(mCurIndex);
-            if (nextIndex==-1) {
+            if (nextIndex == -1) {
                 CL.i("已经是最后一个片段，解码结束");
                 if (mFrameDecodeListener != null) {
-                    mFrameDecodeListener.onFrameDecode(null,0, 0, true);
+                    mFrameDecodeListener.onFrameDecode(null, 0, 0, true);
                 }
                 return;
             }
@@ -180,7 +180,7 @@ public class MultiMediaDecoder implements IMultiMediaDecoder, OnFrameDecodeListe
             mNextThread = tempThread;
             //如果有再下一个片段，继续预加载
             nextIndex = getNextIndex(mCurIndex);
-            if (nextIndex!=-1) {
+            if (nextIndex != -1) {
                 CL.i("预加载下一个片段");
 //                mCurThread.quit();
 //                mCurThread = new RunnableThread("RunnableThreadNew");
@@ -195,10 +195,10 @@ public class MultiMediaDecoder implements IMultiMediaDecoder, OnFrameDecodeListe
     /**
      * @return -1代表没有下一个了
      */
-    private int getNextIndex(int curIndex){
-        if(curIndex<mDataList.size()-1){
-            return curIndex+1;
-        }else if(mLoop){
+    private int getNextIndex(int curIndex) {
+        if (curIndex < mDataList.size() - 1) {
+            return curIndex + 1;
+        } else if (mLoop) {
             return 0;
         }
         return -1;
