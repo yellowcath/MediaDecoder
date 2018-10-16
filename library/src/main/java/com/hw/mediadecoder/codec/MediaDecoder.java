@@ -191,7 +191,9 @@ public class MediaDecoder implements IMediaDecoder {
         if (mMode == Mode.DECODE) {
             Image outputImage = mMediaCodec.getOutputImage(outputBufferId);
             if (mOnFrameDecodeListener != null && info.presentationTimeUs >= mMediaData.startTimeMs * 1000) {
-                mOnFrameDecodeListener.onFrameDecode(outputImage, mCodecColorFormat, info.presentationTimeUs, false);
+                synchronized (this) {
+                    mOnFrameDecodeListener.onFrameDecode(outputImage, mCodecColorFormat, info.presentationTimeUs, false);
+                }
             }
         } else {
             mMediaCodec.getOutputBuffer(outputBufferId);
@@ -256,7 +258,7 @@ public class MediaDecoder implements IMediaDecoder {
     }
 
     @Override
-    public void release() {
+    public synchronized void release() {
         try {
             if (mMediaExtractor != null) {
                 mMediaExtractor.release();

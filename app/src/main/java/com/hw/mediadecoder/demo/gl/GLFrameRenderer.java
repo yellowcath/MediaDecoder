@@ -14,14 +14,14 @@ import javax.microedition.khronos.opengles.GL10;
 
 public class GLFrameRenderer implements Renderer {
 
-    private GLSurfaceView mTargetSurface;
+    private GLSurfaceView mTargetSurfaceView;
     private IGLProgram mProgram;
     private int mScreenWidth, mScreenHeight;
     private int mVideoWidth, mVideoHeight;
     private MediaDataPool<VideoFrame> mMediaDataPool;
 
     public GLFrameRenderer(GLSurfaceView surface, DisplayMetrics dm, MediaDataPool<VideoFrame> pool) {
-        mTargetSurface = surface;
+        mTargetSurfaceView = surface;
         mScreenWidth = dm.widthPixels;
         mScreenHeight = dm.heightPixels;
         mMediaDataPool = pool;
@@ -37,19 +37,17 @@ public class GLFrameRenderer implements Renderer {
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         CL.d("GLFrameRenderer :: onSurfaceCreated");
-        checkInitProgram();
+        mTargetSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
     }
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         CL.d("GLFrameRenderer :: onSurfaceChanged");
         GLES20.glViewport(0, 0, width, height);
-        update(width,height);
     }
 
     @Override
     public void onDrawFrame(GL10 gl) {
-        checkInitProgram();
         VideoFrame videoFrame = null;
         try {
             videoFrame = mMediaDataPool.poll();
@@ -58,6 +56,10 @@ public class GLFrameRenderer implements Renderer {
         }
         synchronized (this) {
             if (videoFrame != null) {
+                if (mVideoWidth != videoFrame.width || mVideoHeight != videoFrame.height) {
+                    updateVideoSize(videoFrame.width, videoFrame.height);
+                    checkInitProgram();
+                }
                 // reset position, have to be done
                 mProgram.buildTextures(videoFrame.getBufferY(), videoFrame.getBufferUV(), mVideoWidth, mVideoHeight);
                 GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -70,7 +72,7 @@ public class GLFrameRenderer implements Renderer {
         }
     }
 
-    private void update(int w, int h) {
+    private void updateVideoSize(int w, int h) {
         initProgram(true);
         // 调整比例
         if (mScreenWidth > 0 && mScreenHeight > 0) {
@@ -88,15 +90,15 @@ public class GLFrameRenderer implements Renderer {
                         heightScale,});
             }
         }
-        this.mVideoWidth = w;
-        this.mVideoHeight = h;
+        mVideoWidth = w;
+        mVideoHeight = h;
     }
 
     private void initProgram(boolean useUVBuffer) {
         if (useUVBuffer) {
-            mProgram = new GLProgram420sp(mTargetSurface.getContext().getApplicationContext(), 0);
+            mProgram = new GLProgram420sp(mTargetSurfaceView.getContext().getApplicationContext(), 0);
         } else {
-            mProgram = new GLProgramYUV(mTargetSurface.getContext().getApplicationContext(), 0);
+            mProgram = new GLProgramYUV(mTargetSurfaceView.getContext().getApplicationContext(), 0);
         }
     }
 //
@@ -112,7 +114,7 @@ public class GLFrameRenderer implements Renderer {
 //            this.uv.put(uv);
 //        }
 //        // request to render
-//        mTargetSurface.requestRender();
+//        mTargetSurfaceView.requestRender();
 //    }
 
 //    private void checkUpdateSize(int w, int h, boolean useUVBuffer) {

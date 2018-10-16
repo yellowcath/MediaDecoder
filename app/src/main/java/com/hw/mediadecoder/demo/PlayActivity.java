@@ -29,7 +29,7 @@ public class PlayActivity extends AppCompatActivity {
 
     private long mStartTime;
     private RunnableThread mSeekThread;
-    private MediaDataPool<VideoFrame> mFramePool = new MediaDataPool<VideoFrame>(10, 10, new VideoFrameAdapter(VideoFrame.YuvType.YUV420P));
+    private MediaDataPool<VideoFrame> mFramePool = new MediaDataPool<VideoFrame>(10, 10, new VideoFrameAdapter(VideoFrame.YuvType.YUV420SP));
     private volatile int mFrameDrawCount;
     private volatile long mStartDrawTime;
     private GLFrameRenderer mFrameRenderer;

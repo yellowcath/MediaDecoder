@@ -49,19 +49,20 @@ public class VideoFrame {
     private void initBuffer(int width, int height) {
         switch (mOutputYuvType) {
             case YUV:
-                if (bufferYUV == null) {
+                if (bufferYUV == null || bufferYUV.capacity()!=width * height * 3 / 2) {
                     bufferYUV = ByteBuffer.allocateDirect(width * height * 3 / 2);
                 }
                 break;
             case YUV420P:
-                if (bufferY == null) {
+                if (bufferY == null || bufferY.capacity()!=width * height
+                        || bufferU.capacity()!=width * height / 4 || bufferV.capacity()!=width * height / 4) {
                     bufferY = ByteBuffer.allocateDirect(width * height);
                     bufferU = ByteBuffer.allocateDirect(width * height / 4);
                     bufferV = ByteBuffer.allocateDirect(width * height / 4);
                 }
                 break;
             case YUV420SP:
-                if (bufferY == null) {
+                if (bufferY == null || bufferY.capacity()!=width * height || bufferUV.capacity()!=width*height/2) {
                     bufferY = ByteBuffer.allocateDirect(width * height);
                     bufferUV = ByteBuffer.allocateDirect(width * height / 2);
                 }
@@ -143,21 +144,21 @@ public class VideoFrame {
 
     public ByteBuffer getBufferU() {
         if(mOutputYuvType!=YuvType.YUV420P){
-            throw new RuntimeException("outputYuvType isn't YuvType.YUV420p");
+            throw new IllegalStateException("outputYuvType isn't YuvType.YUV420p");
         }
         return bufferU;
     }
 
     public ByteBuffer getBufferV() {
         if(mOutputYuvType!=YuvType.YUV420P){
-            throw new RuntimeException("outputYuvType isn't YuvType.YUV420p");
+            throw new IllegalStateException("outputYuvType isn't YuvType.YUV420p");
         }
         return bufferV;
     }
 
     public ByteBuffer getBufferUV() {
         if(mOutputYuvType!=YuvType.YUV420SP){
-            throw new RuntimeException("outputYuvType isn't YuvType.YUV420sp");
+            throw new IllegalStateException("outputYuvType isn't YuvType.YUV420sp");
         }
         return bufferUV;
     }

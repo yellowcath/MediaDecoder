@@ -22,7 +22,7 @@ public class MediaDataPool<DATA> {
 
     private MediaDataAdapter<DATA> mMediaDataAdapter;
     private int mCacheQueueSize;
-    private int mTimeOutMs = 10000;
+    private int mTimeOutMs = 1000;
 
     public MediaDataPool(int availableQueueSize, int cacheQueueSize, MediaDataAdapter<DATA> dataAdapter) {
         mAvailableQueue = new LinkedBlockingQueue<>(availableQueueSize);
