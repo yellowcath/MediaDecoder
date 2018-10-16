@@ -171,7 +171,7 @@ public class MediaDecoder implements IMediaDecoder {
         }
         mInputFrameCount++;
         int size = mMediaExtractor.readSampleData(byteBuffer, 0);
-        if (size == -1 || (sampleTimeMs > mMediaData.endTimeMs && mMediaData.shouldCut)) {
+        if (size == -1 || (mMediaData.shouldCut && mMediaData.endTimeMs!=MediaData.END_TIME_VIDEO_END && sampleTimeMs > mMediaData.endTimeMs)) {
             if (mMode == Mode.SEEK) {
                 if (mOnFrameDecodeListener != null) {
                     mOnFrameDecodeListener.onDecodeError(new IOException("出现异常，已经读到视频尾"));

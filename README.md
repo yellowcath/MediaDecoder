@@ -9,7 +9,7 @@ allprojects {
 ```
 ``` groovy
 	dependencies {
-	        implementation 'com.github.yellowcath:MediaDecoder:1.3.2'
+	        implementation 'com.github.yellowcath:MediaDecoder:1.3.3'
 	}
 ```
 
