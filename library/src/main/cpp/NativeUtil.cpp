@@ -3,7 +3,6 @@
 //
 
 #include <string>
-#include <stdio.h>
 #include "NativeUtil.h"
 
 void copyData(unsigned char* from, int len, unsigned char* to, int pixelStride, int rowStride, int width){
@@ -12,16 +11,9 @@ void copyData(unsigned char* from, int len, unsigned char* to, int pixelStride, 
         return;
     }
     int rowContentWidth = pixelStride * width;
-    LOGE("p:%d,r:%d,width:%d,rowContentWidth:%d\n",pixelStride,rowStride,width,rowContentWidth);
-    for(int i=0,toIndex=0;i<len;){
+    for(int i=0,toIndex=0;i<len;i+=pixelStride){
         if(i%rowStride<rowContentWidth){
-            to[toIndex++] = from[i++];
-        }else{
-            i++;
+            to[toIndex++] = from[i];
         }
-    }
-
-    for(int i=0;i<len/2;i++){
-        LOGE("%d ",to[i]);
     }
 }

@@ -54,7 +54,7 @@ public class PlaneTransfromTest {
             ByteBuffer bufferU = ByteBuffer.allocateDirect(width * height / 4);
             ByteBuffer bufferV = ByteBuffer.allocateDirect(width * height / 4);
 
-            NativeUtil.planesToYUV1(buffer1, buffer2, buffer3,
+            NativeUtil.planesToYUV420p(buffer1, buffer2, buffer3,
                     capacity1, capacity2, capacity3,
                     pixelStride1, pixelStride2, pixelStride3,
                     rowStride1,rowStride2,rowStride3,
@@ -65,19 +65,37 @@ public class PlaneTransfromTest {
             bufferV.get(result, bufferY.capacity() + bufferU.capacity(), bufferV.capacity());
             CL.i("result is:\n" + Arrays.toString(result));
         }
-//        {
-//            ByteBuffer bufferYUV = ByteBuffer.allocateDirect(width * height * 3 / 2);
-//
-//            NativeUtil.planesToYUV(buffer1, buffer2, buffer3,
-//                    capacity1, capacity2, capacity3,
-//                    pixelStride1, pixelStride2, pixelStride3,
-//                    rowStride1, rowStride2, rowStride3,
-//                    width, height, bufferYUV);
-//            byte[] result = new byte[bufferYUV.capacity()];
-//            bufferYUV.get(result, 0, bufferYUV.capacity());
-//
-//            CL.i("result is:\n" + Arrays.toString(result));
-//        }
+
+        {
+            ByteBuffer bufferYUV = ByteBuffer.allocateDirect(width * height*3/2);
+//            ByteBuffer bufferU = ByteBuffer.allocateDirect(width * height / 4);
+//            ByteBuffer bufferV = ByteBuffer.allocateDirect(width * height / 4);
+
+            NativeUtil.planesToYUV(buffer1, buffer2, buffer3,
+                    capacity1, capacity2, capacity3,
+                    pixelStride1, pixelStride2, pixelStride3,
+                    rowStride1,rowStride2,rowStride3,
+                    width,height, bufferYUV);
+            byte[] result = new byte[bufferYUV.capacity()];
+            bufferYUV.get(result, 0, bufferYUV.capacity());
+            CL.i("result is:\n" + Arrays.toString(result));
+        }
+
+        {
+            ByteBuffer bufferY = ByteBuffer.allocateDirect(width * height );
+            ByteBuffer bufferUV = ByteBuffer.allocateDirect(width * height / 2);
+
+            NativeUtil.planesToYUV420sp(buffer1, buffer2, buffer3,
+                    capacity1, capacity2, capacity3,
+                    pixelStride1, pixelStride2, pixelStride3,
+                    rowStride1, rowStride2, rowStride3,
+                    width, height, bufferY,bufferUV);
+            byte[] result = new byte[bufferY.capacity()+bufferUV.capacity()];
+            bufferY.get(result, 0, bufferY.capacity());
+            bufferUV.get(result, bufferY.capacity(), bufferUV.capacity());
+
+            CL.i("result is:\n" + Arrays.toString(result));
+        }
 
 //        {
 //            ByteBuffer bufferY = ByteBuffer.allocateDirect(width * height);
