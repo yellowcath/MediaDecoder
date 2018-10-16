@@ -13,7 +13,7 @@ public interface IMediaDecoder {
 
     public void seekAndDecode();
 
-    public boolean waitSeekFinish(int timeoutMs) throws Exception;
+    public boolean waitSeekFinish(int timeoutMs);
 
     public void loadAndSeekAsync();
 

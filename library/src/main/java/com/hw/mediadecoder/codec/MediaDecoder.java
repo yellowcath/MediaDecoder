@@ -34,7 +34,6 @@ public class MediaDecoder implements IMediaDecoder {
     private MediaExtractor mMediaExtractor;
     private MediaCodec mMediaCodec;
     private MediaData mMediaData;
-    private Exception mThrowable;
     private long mSeekAccuracyMs;
     private long mSeekToTimeMs;
     private int mInputFrameCount;
@@ -58,8 +57,7 @@ public class MediaDecoder implements IMediaDecoder {
         mMode = Mode.UNINITED;
     }
 
-    @Override
-    public void prepare() throws IOException, IllegalStateException {
+    protected void prepareImpl() throws IOException {
         //初始化Extractor
         CL.i("初始化Extractor+");
         mMediaExtractor.setDataSource(mMediaData.mediaPath);
@@ -90,6 +88,19 @@ public class MediaDecoder implements IMediaDecoder {
         mMode = Mode.SEEK;
     }
 
+    @Override
+    public void prepare() {
+        try {
+            prepareImpl();
+        } catch (Exception e) {
+            CL.e(e);
+            mMode = Mode.ERROR;
+            if (mOnFrameDecodeListener != null) {
+                mOnFrameDecodeListener.onDecodeError(e);
+            }
+        }
+    }
+
     private void outputFormatChanged() {
         mOutputFormat = mMediaCodec.getOutputFormat();
         mCodecColorFormat = mOutputFormat.getInteger(MediaFormat.KEY_COLOR_FORMAT);
@@ -97,6 +108,9 @@ public class MediaDecoder implements IMediaDecoder {
 
     @Override
     public void seekAndDecode() {
+        if (mMode == Mode.ERROR) {
+            return;
+        }
         if (mSeekToTimeMs <= 0 || !mMediaData.shouldCut) {
             CL.i("不需要Seek");
             mMode = Mode.DECODE;
@@ -118,7 +132,7 @@ public class MediaDecoder implements IMediaDecoder {
     private void startDecode(MediaCodec codec) {
         boolean inputFinish = false;
         while (true) {
-            if(!inputFinish) {
+            if (!inputFinish) {
                 inputFinish = processInput(codec);
             }
             boolean reachEnd = processOutput(codec);
@@ -159,7 +173,11 @@ public class MediaDecoder implements IMediaDecoder {
         int size = mMediaExtractor.readSampleData(byteBuffer, 0);
         if (size == -1 || (sampleTimeMs > mMediaData.endTimeMs && mMediaData.shouldCut)) {
             if (mMode == Mode.SEEK) {
-                mThrowable = new IOException("出现异常，已经读到视频尾");
+                if (mOnFrameDecodeListener != null) {
+                    mOnFrameDecodeListener.onDecodeError(new IOException("出现异常，已经读到视频尾"));
+                    mMode = Mode.ERROR;
+                    return true;
+                }
             }
             CL.i("已到视频尾");
             mMediaCodec.queueInputBuffer(inputBufferId, 0, 0, sampleTimeUs, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
@@ -169,7 +187,7 @@ public class MediaDecoder implements IMediaDecoder {
         if (mMode == Mode.SEEK) {
             CL.i("循环seek输入第" + mInputFrameCount + "帧,seekToMs:" + seekToTimeMs + " seekSampleTimeMs:" + sampleTimeMs);
         } else {
-            CL.i("Decode输入第" + mInputFrameCount + "帧,size:" + size+" timeMs:"+sampleTimeMs);
+            CL.i("Decode输入第" + mInputFrameCount + "帧,size:" + size + " timeMs:" + sampleTimeMs);
         }
         mMediaExtractor.advance();
         return false;
@@ -211,13 +229,16 @@ public class MediaDecoder implements IMediaDecoder {
     }
 
     @Override
-    public boolean waitSeekFinish(int timeoutMs) throws Exception {
+    public boolean waitSeekFinish(int timeoutMs) {
+        if (mMode == Mode.ERROR) {
+            return false;
+        }
         try {
             boolean wait = mSeekLatch.await(timeoutMs, TimeUnit.MILLISECONDS);
             if (!wait) {
-                throw new TimeoutException("wait time out");
-            } else if (mThrowable != null) {
-                throw mThrowable;
+                if (mOnFrameDecodeListener != null) {
+                    mOnFrameDecodeListener.onDecodeError(new TimeoutException("wait time out"));
+                }
             }
             return wait;
         } catch (InterruptedException e) {
@@ -228,19 +249,12 @@ public class MediaDecoder implements IMediaDecoder {
 
     @Override
     public void loadAndSeekAsync() {
-        mThrowable = null;
         mHandlerThread.postRunnable(new Runnable() {
             @Override
             public void run() {
-                try {
-                    prepare();
-                    CL.i("初始化MediaCodec-");
-                    seekAndDecode();
-                } catch (IOException e) {
-                    mThrowable = e;
-                } catch (IllegalStateException e) {
-                    mThrowable = e;
-                }
+                prepare();
+                CL.i("初始化MediaCodec-");
+                seekAndDecode();
             }
         });
     }
@@ -293,7 +307,8 @@ public class MediaDecoder implements IMediaDecoder {
     enum Mode {
         UNINITED,
         SEEK,
-        DECODE
+        DECODE,
+        ERROR
     }
 
 }

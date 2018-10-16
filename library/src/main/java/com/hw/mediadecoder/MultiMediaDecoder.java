@@ -22,7 +22,7 @@ public class MultiMediaDecoder implements IMultiMediaDecoder, OnFrameDecodeListe
      * 用于两个视频切换时两帧之间的时间间隔
      */
     private static final int DEFAULT_FRAME_INTERVAL_MS = 30;
-    private static final int DEFAULT_TIME_OUT = 15000;
+    private static final int DEFAULT_TIME_OUT = 10*1000;
     /**
      * 默认seek精度
      */
@@ -50,7 +50,7 @@ public class MultiMediaDecoder implements IMultiMediaDecoder, OnFrameDecodeListe
     }
 
     @Override
-    public void prepare() throws Exception {
+    public void prepare() {
         MediaData firstData = mDataList.get(0);
 
         //异步加载第二个
@@ -64,9 +64,9 @@ public class MultiMediaDecoder implements IMultiMediaDecoder, OnFrameDecodeListe
         mCurThread = new RunnableThread("SeekThread1");
         mCurThread.start();
         mCurLoader = new MediaDecoder(new MediaExtractor(), firstData, mCurThread, mSeekAccuracyMs);
+        mCurLoader.setOnFrameDecodeListener(this);
         mCurLoader.loadAndSeekAsync();
         mCurLoader.waitSeekFinish(DEFAULT_TIME_OUT);
-        mCurLoader.setOnFrameDecodeListener(this);
         mCurData = firstData;
         mCurIndex = 0;
 

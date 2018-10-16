@@ -28,45 +28,40 @@ import java.util.concurrent.CountDownLatch;
 public class MediaDecodeTest {
 
     @Test
-    public void testDecode(){
+    public void testDecode() {
         CL.setLogEnable(true);
         List<MediaData> videoList = new LinkedList<>();
-        videoList.add(new MediaData("/sdcard/DCIM/Camera/VID_20181016_112747.mp4"));
-        videoList.add(new MediaData("/sdcard/DCIM/Camera/VID_20181016_112747.mp4"));
+        videoList.add(new MediaData("/sdcard/DCIM/Camera/VID_20181016_112747a.mp4"));
+        videoList.add(new MediaData("/sdcard/DCIM/Camera/VID_20181016_112747a.mp4"));
         MultiMediaDecoder decoder = new MultiMediaDecoder(new ArrayList<MediaData>(videoList));
         final CountDownLatch countDownLatch = new CountDownLatch(1);
-        try {
-            decoder.setOnFrameDecodeListener(new OnFrameDecodeListener() {
-                @Override
-                public void onFrameDecode(Image frameImage,int codecColorFormat,long frameTimeUs,boolean end) {
-                    Log.e("hwLog","frame:"+frameImage+" end:"+end+" time:"+frameTimeUs/1000);
-                    if(end){
-                        countDownLatch.countDown();
-                    }
-                }
-
-                @Override
-                public void onDecodeError(Throwable throwable) {
-                    Log.e("hwLog","error:"+throwable);
+        decoder.setOnFrameDecodeListener(new OnFrameDecodeListener() {
+            @Override
+            public void onFrameDecode(Image frameImage, int codecColorFormat, long frameTimeUs, boolean end) {
+                Log.e("hwLog", "frame:" + frameImage + " end:" + end + " time:" + frameTimeUs / 1000);
+                if (end) {
                     countDownLatch.countDown();
                 }
-            });
-            decoder.prepare();
-            decoder.start();
+            }
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            @Override
+            public void onDecodeError(Throwable throwable) {
+                Log.e("hwLog", "error:" + throwable);
+                countDownLatch.countDown();
+            }
+        });
+        decoder.prepare();
+        decoder.start();
         try {
             countDownLatch.await();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        SystemClock.sleep(5000);
+//        SystemClock.sleep(1000);
     }
 
-//    @Test
-    public void testSeek(){
+    //    @Test
+    public void testSeek() {
         CL.setLogEnable(true);
         final Context appContext = InstrumentationRegistry.getTargetContext();
         File videoFile1 = new File(appContext.getCacheDir(), "1.mp4");
@@ -99,7 +94,7 @@ public class MediaDecodeTest {
                 long s = System.currentTimeMillis();
 //                ByteBuffer byteBuffer = ByteBuffer.allocate((int) (frameImage.getWidth()*frameImage.getHeight()*1.5f));
                 long e = System.currentTimeMillis();
-                CL.i("getPlanes:"+(e-s)+"ms");
+                CL.i("getPlanes:" + (e - s) + "ms");
             }
 
             @Override
