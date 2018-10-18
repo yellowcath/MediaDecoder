@@ -6,16 +6,14 @@
 #define _Included_com_hw_mediadecoder_util_NativeUtil
 
 
-
-
 JNIEXPORT void JNICALL
 planesToYUV420p(JNIEnv *env, jclass type, jobject buffer1, jobject buffer2,
-             jobject buffer3, jint capacity1, jint capacity2, jint capacity3,
-             jint pixelStride1, jint pixelStride2, jint pixelStride3,
-             jint rowStride1, jint rowStride2, jint rowStride3,
-             jint width, jint height,
-             jobject bufferY, jobject bufferU,
-             jobject bufferV) {
+                jobject buffer3, jint capacity1, jint capacity2, jint capacity3,
+                jint pixelStride1, jint pixelStride2, jint pixelStride3,
+                jint rowStride1, jint rowStride2, jint rowStride3,
+                jint width, jint height,
+                jobject bufferY, jobject bufferU,
+                jobject bufferV) {
 
     int pStride1 = pixelStride1;
     int pStride2 = pixelStride2;
@@ -45,14 +43,15 @@ planesToYUV420p(JNIEnv *env, jclass type, jobject buffer1, jobject buffer2,
     copyData(data3, len3, v, pStride3, rStride3, uvWidth);
 
 }
+
 JNIEXPORT void JNICALL
 planesToYUV(JNIEnv *env, jclass type,
-                                                     jobject buffer1, jobject buffer2, jobject buffer3,
-                                                     jint capacity1, jint capacity2, jint capacity3,
-                                                     jint pixelStride1, jint pixelStride2, jint pixelStride3,
-                                                     jint rowStride1, jint rowStride2, jint rowStride3,
-                                                     jint width, jint height,
-                                                     jobject bufferYUV) {
+            jobject buffer1, jobject buffer2, jobject buffer3,
+            jint capacity1, jint capacity2, jint capacity3,
+            jint pixelStride1, jint pixelStride2, jint pixelStride3,
+            jint rowStride1, jint rowStride2, jint rowStride3,
+            jint width, jint height,
+            jobject bufferYUV) {
 
     int pStride1 = pixelStride1;
     int pStride2 = pixelStride2;
@@ -82,12 +81,12 @@ planesToYUV(JNIEnv *env, jclass type,
 
 JNIEXPORT void JNICALL
 planesToYUV420sp(JNIEnv *env, jclass type, jobject buffer1, jobject buffer2,
-                                                          jobject buffer3, jint capacity1, jint capacity2,
-                                                          jint capacity3,
-                                                          jint pixelStride1, jint pixelStride2, jint pixelStride3,
-                                                          jint rowStride1, jint rowStride2, jint rowStride3,
-                                                          jint width, jint height,
-                                                          jobject bufferY, jobject bufferUV) {
+                 jobject buffer3, jint capacity1, jint capacity2,
+                 jint capacity3,
+                 jint pixelStride1, jint pixelStride2, jint pixelStride3,
+                 jint rowStride1, jint rowStride2, jint rowStride3,
+                 jint width, jint height,
+                 jobject bufferY, jobject bufferUV) {
 
     int pStride1 = pixelStride1;
     int pStride2 = pixelStride2;
@@ -107,14 +106,25 @@ planesToYUV420sp(JNIEnv *env, jclass type, jobject buffer1, jobject buffer2,
     unsigned char *data3 = (unsigned char *) env->GetDirectBufferAddress(buffer3);
 
     unsigned char *y = (unsigned char *) env->GetDirectBufferAddress(bufferY);
-    unsigned char *u = (unsigned char *) env->GetDirectBufferAddress(bufferUV);
-    unsigned char *v = u + (width * height / 4);
+    unsigned char *uv = (unsigned char *) env->GetDirectBufferAddress(bufferUV);
 
     copyData(data1, len1, y, pStride1, rStride1, w);
-    copyData(data2, len2, u, pStride2, rStride2, uvWidth);
-    copyData(data3, len3, v, pStride3, rStride3, uvWidth);
-}
+    int rowContentWidth2 = pixelStride2 * width;
+    for (int uIndex = 0, toIndex = 0; uIndex < capacity2; uIndex += pixelStride2) {
+        if (uIndex % rowStride2 < rowContentWidth2) {
+            uv[toIndex] = data2[uIndex];
+            toIndex += 2;
+        }
+    }
 
+    int rowContentWidth3 = pixelStride3 * width;
+    for (int vIndex = 0, toIndex = 1; vIndex < capacity3; vIndex += pixelStride3) {
+        if (vIndex % rowStride3 < rowContentWidth3) {
+            uv[toIndex] = data3[vIndex];
+            toIndex += 2;
+        }
+    }
+}
 
 
 static JNINativeMethod methods[] = {

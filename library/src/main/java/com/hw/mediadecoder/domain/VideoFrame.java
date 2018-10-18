@@ -12,6 +12,7 @@ import java.nio.ByteBuffer;
  * 提供整体的YUV
  */
 public class VideoFrame {
+    public static boolean ENABLE_DIRECTCOPY_YUV420SP = true;
     //YuvType.YUV
     protected ByteBuffer bufferYUV;
     //YuvType.YUV420P
@@ -34,7 +35,7 @@ public class VideoFrame {
 
     public enum YuvType {
         YUV420P,
-        YUV420SP,
+        YUV420SP,//NV12
         YUV
     }
 
@@ -49,20 +50,20 @@ public class VideoFrame {
     private void initBuffer(int width, int height) {
         switch (mOutputYuvType) {
             case YUV:
-                if (bufferYUV == null || bufferYUV.capacity()!=width * height * 3 / 2) {
+                if (bufferYUV == null || bufferYUV.capacity() != width * height * 3 / 2) {
                     bufferYUV = ByteBuffer.allocateDirect(width * height * 3 / 2);
                 }
                 break;
             case YUV420P:
-                if (bufferY == null || bufferY.capacity()!=width * height
-                        || bufferU.capacity()!=width * height / 4 || bufferV.capacity()!=width * height / 4) {
+                if (bufferY == null || bufferY.capacity() != width * height
+                        || bufferU.capacity() != width * height / 4 || bufferV.capacity() != width * height / 4) {
                     bufferY = ByteBuffer.allocateDirect(width * height);
                     bufferU = ByteBuffer.allocateDirect(width * height / 4);
                     bufferV = ByteBuffer.allocateDirect(width * height / 4);
                 }
                 break;
             case YUV420SP:
-                if (bufferY == null || bufferY.capacity()!=width * height || bufferUV.capacity()!=width*height/2) {
+                if (bufferY == null || bufferY.capacity() != width * height || bufferUV.capacity() != width * height / 2) {
                     bufferY = ByteBuffer.allocateDirect(width * height);
                     bufferUV = ByteBuffer.allocateDirect(width * height / 2);
                 }
@@ -78,7 +79,7 @@ public class VideoFrame {
         mediaFrame.timestampUs = timestampUs;
         mediaFrame.codecColorFormat = codecColorFormat;
 
-        mediaFrame.initBuffer(image.getWidth(),image.getHeight());
+        mediaFrame.initBuffer(image.getWidth(), image.getHeight());
 
         switch (mediaFrame.getOutputYuvType()) {
             case YUV:
@@ -96,17 +97,25 @@ public class VideoFrame {
                         planes[0].getPixelStride(), planes[1].getPixelStride(), planes[2].getPixelStride(),
                         planes[0].getRowStride(), planes[1].getRowStride(), planes[2].getRowStride(),
                         image.getWidth(), image.getHeight(),
-                        mediaFrame.bufferY,mediaFrame.bufferU,mediaFrame.bufferV
+                        mediaFrame.bufferY, mediaFrame.bufferU, mediaFrame.bufferV
                 );
                 break;
             case YUV420SP:
-                NativeUtil.planesToYUV420sp(planes[0].getBuffer(), planes[1].getBuffer(), planes[2].getBuffer(),
-                        planes[0].getBuffer().capacity(), planes[1].getBuffer().capacity(), planes[2].getBuffer().capacity(),
-                        planes[0].getPixelStride(), planes[1].getPixelStride(), planes[2].getPixelStride(),
-                        planes[0].getRowStride(), planes[1].getRowStride(), planes[2].getRowStride(),
-                        image.getWidth(), image.getHeight(),
-                        mediaFrame.bufferY,mediaFrame.bufferUV
-                );
+                if (ENABLE_DIRECTCOPY_YUV420SP && planes[0].getPixelStride() == 1
+                        && planes[2].getPixelStride() == 2) {
+                    mediaFrame.bufferY.put(planes[0].getBuffer());
+                    mediaFrame.bufferUV.put(planes[1].getBuffer());
+                    mediaFrame.bufferY.position(0);
+                    mediaFrame.bufferUV.position(0);
+                } else {
+                    NativeUtil.planesToYUV420sp(planes[0].getBuffer(), planes[1].getBuffer(), planes[2].getBuffer(),
+                            planes[0].getBuffer().capacity(), planes[1].getBuffer().capacity(), planes[2].getBuffer().capacity(),
+                            planes[0].getPixelStride(), planes[1].getPixelStride(), planes[2].getPixelStride(),
+                            planes[0].getRowStride(), planes[1].getRowStride(), planes[2].getRowStride(),
+                            image.getWidth(), image.getHeight(),
+                            mediaFrame.bufferY, mediaFrame.bufferUV
+                    );
+                }
                 break;
         }
 
@@ -129,35 +138,35 @@ public class VideoFrame {
     }
 
     public ByteBuffer getBufferYUV() {
-        if(mOutputYuvType!=YuvType.YUV){
+        if (mOutputYuvType != YuvType.YUV) {
             throw new RuntimeException("outputYuvType isn't YuvType.YUV!");
         }
         return bufferYUV;
     }
 
     public ByteBuffer getBufferY() {
-        if(mOutputYuvType==YuvType.YUV){
+        if (mOutputYuvType == YuvType.YUV) {
             throw new RuntimeException("outputYuvType isn't YuvType.YUV420p or YuvType.YUV420sp");
         }
         return bufferY;
     }
 
     public ByteBuffer getBufferU() {
-        if(mOutputYuvType!=YuvType.YUV420P){
+        if (mOutputYuvType != YuvType.YUV420P) {
             throw new IllegalStateException("outputYuvType isn't YuvType.YUV420p");
         }
         return bufferU;
     }
 
     public ByteBuffer getBufferV() {
-        if(mOutputYuvType!=YuvType.YUV420P){
+        if (mOutputYuvType != YuvType.YUV420P) {
             throw new IllegalStateException("outputYuvType isn't YuvType.YUV420p");
         }
         return bufferV;
     }
 
     public ByteBuffer getBufferUV() {
-        if(mOutputYuvType!=YuvType.YUV420SP){
+        if (mOutputYuvType != YuvType.YUV420SP) {
             throw new IllegalStateException("outputYuvType isn't YuvType.YUV420sp");
         }
         return bufferUV;

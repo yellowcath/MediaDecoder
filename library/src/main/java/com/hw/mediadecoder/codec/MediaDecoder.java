@@ -147,7 +147,13 @@ public class MediaDecoder implements IMediaDecoder {
         if (inputBufferId < 0) {
             return false;
         }
-        ByteBuffer byteBuffer = codec.getInputBuffer(inputBufferId);
+        ByteBuffer byteBuffer = null;
+        try {
+            byteBuffer = codec.getInputBuffer(inputBufferId);
+        } catch (IllegalStateException e) {
+            CL.e(e);
+            return false;
+        }
         long sampleTimeUs = mMediaExtractor.getSampleTime();
         long sampleTimeMs = sampleTimeUs / 1000;
         long seekToTimeMs = mSeekToTimeMs;
@@ -171,7 +177,7 @@ public class MediaDecoder implements IMediaDecoder {
         }
         mInputFrameCount++;
         int size = mMediaExtractor.readSampleData(byteBuffer, 0);
-        if (size == -1 || (mMediaData.shouldCut && mMediaData.endTimeMs!=MediaData.END_TIME_VIDEO_END && sampleTimeMs > mMediaData.endTimeMs)) {
+        if (size == -1 || (mMediaData.shouldCut && mMediaData.endTimeMs != MediaData.END_TIME_VIDEO_END && sampleTimeMs > mMediaData.endTimeMs)) {
             if (mMode == Mode.SEEK) {
                 if (mOnFrameDecodeListener != null) {
                     mOnFrameDecodeListener.onDecodeError(new IOException("出现异常，已经读到视频尾"));
