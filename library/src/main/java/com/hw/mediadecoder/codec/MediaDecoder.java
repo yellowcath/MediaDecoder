@@ -142,6 +142,12 @@ public class MediaDecoder implements IMediaDecoder {
                 if (!inputFinish) {
                     inputFinish = processInput(codec);
                 }
+                if (mMode == Mode.UNINITED) {
+                    if (mOnFrameDecodeListener != null) {
+                        mOnFrameDecodeListener.onDecodeError(new RuntimeException("release() is called!"));
+                    }
+                    break;
+                }
                 boolean reachEnd = processOutput(codec);
                 if (reachEnd) {
                     break;
@@ -182,6 +188,9 @@ public class MediaDecoder implements IMediaDecoder {
                 mDecodeLatch.await();
             } catch (InterruptedException e) {
                 e.printStackTrace();
+            }
+            if(mMode==Mode.UNINITED){
+                return false;
             }
         }
         mInputFrameCount++;
@@ -291,7 +300,6 @@ public class MediaDecoder implements IMediaDecoder {
     @Override
     public synchronized void release() {
         try {
-            mDecodeLatch.countDown();
             if (mMediaExtractor != null) {
                 mMediaExtractor.release();
             }
