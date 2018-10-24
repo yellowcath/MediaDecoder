@@ -291,6 +291,7 @@ public class MediaDecoder implements IMediaDecoder {
     @Override
     public synchronized void release() {
         try {
+            mDecodeLatch.countDown();
             if (mMediaExtractor != null) {
                 mMediaExtractor.release();
             }
