@@ -132,13 +132,22 @@ public class MediaDecoder implements IMediaDecoder {
     private void startDecode(MediaCodec codec) {
         boolean inputFinish = false;
         while (true) {
-            if (!inputFinish) {
-                inputFinish = processInput(codec);
+            synchronized (this) {
+                if (mMode == Mode.UNINITED) {
+                    if (mOnFrameDecodeListener != null) {
+                        mOnFrameDecodeListener.onDecodeError(new RuntimeException("release() is called!"));
+                    }
+                    break;
+                }
+                if (!inputFinish) {
+                    inputFinish = processInput(codec);
+                }
+                boolean reachEnd = processOutput(codec);
+                if (reachEnd) {
+                    break;
+                }
             }
-            boolean reachEnd = processOutput(codec);
-            if (reachEnd) {
-                break;
-            }
+
         }
     }
 
@@ -221,9 +230,7 @@ public class MediaDecoder implements IMediaDecoder {
         if (mMode == Mode.DECODE) {
             Image outputImage = mMediaCodec.getOutputImage(outputBufferId);
             if (mOnFrameDecodeListener != null && info.presentationTimeUs >= mMediaData.startTimeMs * 1000) {
-                synchronized (this) {
-                    mOnFrameDecodeListener.onFrameDecode(outputImage, mCodecColorFormat, info.presentationTimeUs, false);
-                }
+                mOnFrameDecodeListener.onFrameDecode(outputImage, mCodecColorFormat, info.presentationTimeUs, false);
             }
         } else {
             mMediaCodec.getOutputBuffer(outputBufferId);
@@ -290,6 +297,7 @@ public class MediaDecoder implements IMediaDecoder {
             if (mMediaCodec != null) {
                 mMediaCodec.release();
             }
+            mMode = Mode.UNINITED;
         } catch (Exception e) {
             e.printStackTrace();
         }
