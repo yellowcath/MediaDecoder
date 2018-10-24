@@ -44,7 +44,7 @@ public class MediaDataPool<DATA> {
 
     public DATA poll() throws InterruptedException {
         CL.i("poll,size:" + mAvailableQueue.size());
-        DATA data = mAvailableQueue.poll(mTimeOutMs, TimeUnit.MILLISECONDS);
+        DATA data = mAvailableQueue.isEmpty() ? null : mAvailableQueue.poll(mTimeOutMs, TimeUnit.MILLISECONDS);
         return data;
     }
 
@@ -57,7 +57,7 @@ public class MediaDataPool<DATA> {
 
     public DATA getCachedObject() {
         CL.i("getCachedObject,size:" + mCacheQueue.size());
-        return mCacheQueue.poll();
+        return mCacheQueue.isEmpty() ? null : mCacheQueue.poll();
     }
 
     public void setTimeOutMs(int mTimeOutMs) {
