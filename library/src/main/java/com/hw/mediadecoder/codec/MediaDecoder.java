@@ -189,7 +189,7 @@ public class MediaDecoder implements IMediaDecoder {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            if(mMode==Mode.UNINITED){
+            if (mMode == Mode.UNINITED) {
                 return false;
             }
         }
@@ -298,17 +298,22 @@ public class MediaDecoder implements IMediaDecoder {
     }
 
     @Override
-    public synchronized void release() {
-        try {
-            if (mMediaExtractor != null) {
-                mMediaExtractor.release();
+    public void release() {
+        if (mDecodeLatch.getCount() == 1) {
+            mDecodeLatch.countDown();
+        }
+        synchronized (this) {
+            try {
+                if (mMediaExtractor != null) {
+                    mMediaExtractor.release();
+                }
+                if (mMediaCodec != null) {
+                    mMediaCodec.release();
+                }
+                mMode = Mode.UNINITED;
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            if (mMediaCodec != null) {
-                mMediaCodec.release();
-            }
-            mMode = Mode.UNINITED;
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
