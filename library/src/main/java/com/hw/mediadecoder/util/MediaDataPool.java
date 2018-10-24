@@ -2,7 +2,7 @@ package com.hw.mediadecoder.util;
 
 import android.media.Image;
 
-import java.util.LinkedList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -18,7 +18,7 @@ public class MediaDataPool<DATA> {
     /**
      * 作为对象池使用
      */
-    private LinkedList<DATA> mCacheQueue;
+    private ConcurrentLinkedQueue<DATA> mCacheQueue;
 
     private MediaDataAdapter<DATA> mMediaDataAdapter;
     private int mCacheQueueSize;
@@ -26,7 +26,7 @@ public class MediaDataPool<DATA> {
 
     public MediaDataPool(int availableQueueSize, int cacheQueueSize, MediaDataAdapter<DATA> dataAdapter) {
         mAvailableQueue = new LinkedBlockingQueue<>(availableQueueSize);
-        mCacheQueue = new LinkedList<>();
+        mCacheQueue = new ConcurrentLinkedQueue<>();
         mMediaDataAdapter = dataAdapter;
         mMediaDataAdapter.setMediaDataPool(this);
         mCacheQueueSize = cacheQueueSize;
