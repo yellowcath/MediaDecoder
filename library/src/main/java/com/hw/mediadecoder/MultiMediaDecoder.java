@@ -22,7 +22,7 @@ public class MultiMediaDecoder implements IMultiMediaDecoder, OnFrameDecodeListe
      * 用于两个视频切换时两帧之间的时间间隔
      */
     private static final int DEFAULT_FRAME_INTERVAL_MS = 30;
-    private static final int DEFAULT_TIME_OUT = 10*1000;
+    private static final int DEFAULT_TIME_OUT = 10 * 1000;
     /**
      * 默认seek精度
      */
@@ -126,6 +126,11 @@ public class MultiMediaDecoder implements IMultiMediaDecoder, OnFrameDecodeListe
     @Override
     public MediaFormat getExtractorMediaFormat() {
         return mCurLoader.getExtractorMediaFormat();
+    }
+
+    @Override
+    public int getFrameRate() {
+        return mCurLoader == null ? 0 : mCurLoader.getFrameRate();
     }
 
     @Override

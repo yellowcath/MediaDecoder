@@ -30,4 +30,6 @@ public interface IMediaDecoder {
     MediaFormat getCodecMediaFormat();
 
     MediaFormat getExtractorMediaFormat();
+
+    int getFrameRate();
 }

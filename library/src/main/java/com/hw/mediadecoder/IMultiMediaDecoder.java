@@ -23,4 +23,6 @@ public interface IMultiMediaDecoder {
 
     public MediaFormat getCodecMediaFormat();
     public MediaFormat getExtractorMediaFormat();
+
+    int getFrameRate();
 }

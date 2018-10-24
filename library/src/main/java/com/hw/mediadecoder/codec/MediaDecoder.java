@@ -310,6 +310,11 @@ public class MediaDecoder implements IMediaDecoder {
         return mMediaExtractor.getTrackFormat(MediaUtil.getVideoTrackIndex(mMediaExtractor));
     }
 
+    @Override
+    public int getFrameRate() {
+        return mFrameRate;
+    }
+
     enum Mode {
         UNINITED,
         SEEK,
