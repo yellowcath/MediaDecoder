@@ -4,6 +4,7 @@ import android.media.Image;
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.os.SystemClock;
 import com.hw.mediadecoder.domain.MediaData;
 import com.hw.mediadecoder.util.CL;
 import com.hw.mediadecoder.util.MediaUtil;
@@ -47,6 +48,7 @@ public class MediaDecoder implements IMediaDecoder {
     private int mCodecColorFormat;
     private MediaFormat mOutputFormat;
     private AtomicBoolean mDecoding = new AtomicBoolean(false);
+    private volatile boolean mStopDecode = false;
 
     public MediaDecoder(MediaExtractor mediaExtractor, MediaData mediaData, RunnableThread seekThread, long seekAccuracyMs) {
         mHandlerThread = seekThread;
@@ -132,23 +134,18 @@ public class MediaDecoder implements IMediaDecoder {
     }
 
     private void startDecode(MediaCodec codec) {
+        mStopDecode = false;
         boolean inputFinish = false;
         mDecoding.set(true);
         try {
-            while (true) {
-                if (mMode == Mode.UNINITED) {
-                    if (mOnFrameDecodeListener != null) {
-                        mOnFrameDecodeListener.onDecodeError(new RuntimeException("release() is called!"));
-                    }
+            while (!mStopDecode) {
+                if (checkMode()) {
                     break;
                 }
                 if (!inputFinish) {
                     inputFinish = processInput(codec);
                 }
-                if (mMode == Mode.UNINITED) {
-                    if (mOnFrameDecodeListener != null) {
-                        mOnFrameDecodeListener.onDecodeError(new RuntimeException("release() is called!"));
-                    }
+                if (checkMode()) {
                     break;
                 }
                 boolean reachEnd = processOutput(codec);
@@ -158,7 +155,20 @@ public class MediaDecoder implements IMediaDecoder {
             }
         } finally {
             mDecoding.set(false);
+            if (mStopDecode && mOnFrameDecodeListener != null) {
+                mOnFrameDecodeListener.onDecodeError(new RuntimeException("release() is called!"));
+            }
         }
+    }
+
+    private boolean checkMode() {
+        if (mMode == Mode.UNINITED) {
+            if (mOnFrameDecodeListener != null) {
+                mOnFrameDecodeListener.onDecodeError(new RuntimeException("release() is called!"));
+            }
+            return true;
+        }
+        return false;
     }
 
     private boolean processInput(MediaCodec codec) {
@@ -235,6 +245,7 @@ public class MediaDecoder implements IMediaDecoder {
         CL.i("Mode:" + mMode + "输出第" + mOutputFrameCount + "帧,size:" + info.size + " presentationTimeUs:" + info.presentationTimeUs + " flag:" + info.flags);
         if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) == MediaCodec.BUFFER_FLAG_END_OF_STREAM) {
             CL.i("已到视频尾，解码完毕");
+            mDecoding.set(false);
             if (mOnFrameDecodeListener != null) {
                 mOnFrameDecodeListener.onFrameDecode(null, 0, 0, true);
             }
@@ -305,13 +316,14 @@ public class MediaDecoder implements IMediaDecoder {
 
     @Override
     public void release() {
+        mStopDecode = true;
         if (mDecodeLatch.getCount() == 1) {
             mDecodeLatch.countDown();
         }
         while (mDecoding.get()) {
-            CL.w("waiting decode finish!");
+            CL.e("waiting decode finish!");
+            SystemClock.sleep(5);
         }
-        CL.w("decode finish,start release");
         try {
             if (mMediaExtractor != null) {
                 mMediaExtractor.release();

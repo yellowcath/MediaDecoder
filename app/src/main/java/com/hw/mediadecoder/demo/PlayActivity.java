@@ -45,9 +45,21 @@ public class PlayActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_play);
 
-        if (getIntent() != null) {
+        if (getIntent() != null && getIntent().hasExtra("list")) {
             mDataList = getIntent().getParcelableArrayListExtra("list");
         }
+//        else {
+//            CL.setLogEnable(true);
+//            mDataList = new ArrayList<>();
+//            mDataList.add(new MediaData("/sdcard/g.mp4"));
+//
+//            new Handler().postDelayed(new Runnable() {
+//                @Override
+//                public void run() {
+//                    mMultiMediaDecoder.release();
+//                }
+//            }, 5000);
+//        }
         if (mDataList == null || mDataList.size() == 0) {
             Toast.makeText(this, "无视频数据", Toast.LENGTH_SHORT).show();
             finish();
