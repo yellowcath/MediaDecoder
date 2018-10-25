@@ -14,6 +14,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -45,6 +46,7 @@ public class MediaDecoder implements IMediaDecoder {
     private OnFrameDecodeListener mOnFrameDecodeListener;
     private int mCodecColorFormat;
     private MediaFormat mOutputFormat;
+    private AtomicBoolean mDecoding = new AtomicBoolean(false);
 
     public MediaDecoder(MediaExtractor mediaExtractor, MediaData mediaData, RunnableThread seekThread, long seekAccuracyMs) {
         mHandlerThread = seekThread;
@@ -131,8 +133,9 @@ public class MediaDecoder implements IMediaDecoder {
 
     private void startDecode(MediaCodec codec) {
         boolean inputFinish = false;
-        while (true) {
-            synchronized (this) {
+        mDecoding.set(true);
+        try {
+            while (true) {
                 if (mMode == Mode.UNINITED) {
                     if (mOnFrameDecodeListener != null) {
                         mOnFrameDecodeListener.onDecodeError(new RuntimeException("release() is called!"));
@@ -153,7 +156,8 @@ public class MediaDecoder implements IMediaDecoder {
                     break;
                 }
             }
-
+        } finally {
+            mDecoding.set(false);
         }
     }
 
@@ -238,8 +242,10 @@ public class MediaDecoder implements IMediaDecoder {
         }
         if (mMode == Mode.DECODE) {
             Image outputImage = mMediaCodec.getOutputImage(outputBufferId);
-            if (mOnFrameDecodeListener != null && info.presentationTimeUs >= mMediaData.startTimeMs * 1000) {
-                mOnFrameDecodeListener.onFrameDecode(outputImage, mCodecColorFormat, info.presentationTimeUs, false);
+            synchronized (this) {
+                if (mOnFrameDecodeListener != null && info.presentationTimeUs >= mMediaData.startTimeMs * 1000) {
+                    mOnFrameDecodeListener.onFrameDecode(outputImage, mCodecColorFormat, info.presentationTimeUs, false);
+                }
             }
         } else {
             mMediaCodec.getOutputBuffer(outputBufferId);
@@ -302,18 +308,20 @@ public class MediaDecoder implements IMediaDecoder {
         if (mDecodeLatch.getCount() == 1) {
             mDecodeLatch.countDown();
         }
-        synchronized (this) {
-            try {
-                if (mMediaExtractor != null) {
-                    mMediaExtractor.release();
-                }
-                if (mMediaCodec != null) {
-                    mMediaCodec.release();
-                }
-                mMode = Mode.UNINITED;
-            } catch (Exception e) {
-                e.printStackTrace();
+        while (mDecoding.get()) {
+            CL.w("waiting decode finish!");
+        }
+        CL.w("decode finish,start release");
+        try {
+            if (mMediaExtractor != null) {
+                mMediaExtractor.release();
             }
+            if (mMediaCodec != null) {
+                mMediaCodec.release();
+            }
+            mMode = Mode.UNINITED;
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
